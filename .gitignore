@@ -1,0 +1,13 @@
+# Dependency folders
+node_modules/
+dbInvoice_backend/node_modules/
+dbInvoice_frontend/node_modules/
+
+# Environment files
+.env
+dbInvoice_backend/.env
+dbInvoice_frontend/.env
+
+# Build outputs
+dbInvoice_frontend/dist
+dist/
