@@ -1,7 +1,7 @@
 # Dependency folders
 node_modules/
 dbInvoice_backend/node_modules/
-dbInvoice_frontend/node_modules/
+DbInvoice_frontend/node_modules/
 
 # Environment files
 .env
