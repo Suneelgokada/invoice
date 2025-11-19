@@ -2971,7 +2971,7 @@ function App() {
     // --- UPDATE 1: Define the Base URL Here ---
     // You should use an Environment Variable here in a real project (see section below), 
     // but for now, we hardcode the Render URL as requested:
-    const BASE_URL = import.meta.env.VITE_API_URL;
+    const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
     const date = new Date();
     // Simplified Number to Words Converter (Replaces 'to-words' library)
