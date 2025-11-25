@@ -2429,8 +2429,9 @@ function AdminPanel({ onLogout }) {
             // CHANGED API ENDPOINTS: /api/admin/invoice -> /api/admin/invoices (Plural for list fetch)
             // CHANGED API ENDPOINTS: /api/admin/quotation -> /api/admin/quotations (Plural for list fetch)
             const [invoicesResponse, quotationsResponse] = await Promise.all([
-                fetch(`${BASE_URL}/api/admin/invoice`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${BASE_URL}/api/admin/quotation`, { headers: { Authorization: `Bearer ${token}` } })
+                fetch(`${BASE_URL}/api/invoices`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${BASE_URL}/api/quotations`, { headers: { Authorization: `Bearer ${token}` } })
+
             ]);
 
             const invoicesData = await invoicesResponse.json();
@@ -2448,7 +2449,6 @@ function AdminPanel({ onLogout }) {
                 console.error("Failed to fetch quotations:", quotationsData.error || quotationsData.message);
                 setDashboardError(prev => prev + ' Failed to load quotations data. ');
             }
-
         } catch (err) {
             setDashboardError('Failed to fetch dashboard data. Check network connection.');
             console.error('Admin Data Fetch Error:', err);
