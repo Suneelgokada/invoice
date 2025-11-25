@@ -2426,9 +2426,11 @@ function AdminPanel({ onLogout }) {
         setDashboardError('');
         try {
             // Fetch ALL data needed for dashboard and lists
+            // CHANGED API ENDPOINTS: /api/admin/invoice -> /api/admin/invoices (Plural for list fetch)
+            // CHANGED API ENDPOINTS: /api/admin/quotation -> /api/admin/quotations (Plural for list fetch)
             const [invoicesResponse, quotationsResponse] = await Promise.all([
-                fetch(`${BASE_URL}/api/admin/invoices`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${BASE_URL}/api/admin/quotations`, { headers: { Authorization: `Bearer ${token}` } })
+                fetch(`${BASE_URL}/api/admin/invoice`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`${BASE_URL}/api/admin/quotation`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
             const invoicesData = await invoicesResponse.json();
@@ -2776,7 +2778,7 @@ function AdminPanel({ onLogout }) {
             setIsEditing(false); 
             const token = localStorage.getItem('adminToken'); // Token required for search if using protected routes
 
-            // 1. Try fetching Quotation
+            // 1. Try fetching Quotation (Using /quotation/fetch/ as per your initial App.js logic structure)
             const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
             let response = await fetch(quoteUrl, { headers: { "Authorization": `Bearer ${token}` } });
             let result = await response.json();
@@ -2808,7 +2810,7 @@ function AdminPanel({ onLogout }) {
                 return;
             }
 
-            // 2. Try fetching Invoice
+            // 2. Try fetching Invoice (Using /invoice/fetch/ as per your initial App.js logic structure)
             else if (invoice || !quotation) {
                 const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
                 response = await fetch(invoiceUrl, { headers: { "Authorization": `Bearer ${token}` } });
@@ -2857,8 +2859,9 @@ function AdminPanel({ onLogout }) {
     const performDeleteAdmin = async (type, number, token) => {
         setDashboardLoading(true);
         try {
+            // CHANGED API ENDPOINT: /api/admin/type -> /api/admin/types (Plural convention)
             const response = await fetch(
-                `${BASE_URL}/api/admin/${type.toLowerCase()}/${number}`,
+                `${BASE_URL}/api/admin/${type.toLowerCase()}s/${number}`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -2909,8 +2912,9 @@ function AdminPanel({ onLogout }) {
         setDashboardLoading(true);
 
         try {
+            // CHANGED API ENDPOINT: /api/admin/type -> /api/admin/types (Plural convention)
             const response = await fetch(
-                `${BASE_URL}/api/admin/${type}/${number}`,
+                `${BASE_URL}/api/admin/${type}s/${number}`,
                 {
                     method: 'PUT',
                     headers: {
@@ -3626,7 +3630,7 @@ function AdminPanel({ onLogout }) {
         `}>
             <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
                 <span className="text-indigo-300">Admin Portal
-                  </span> 
+                </span> 
                 <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1">
                     <X size={24} />
                 </button>
