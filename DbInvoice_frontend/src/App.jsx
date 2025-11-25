@@ -3903,23 +3903,532 @@
 // export default App;
 
 
-import React, { useState, useRef, useEffect } from "react";
-import ReactToPrint from "react-to-print";
-import { User, Lock, LogOut } from 'lucide-react';
-// IMPORTANT: Import your AdminPanel component
-import AdminPanel from "./AdminPanel";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+// Removed: import ReactToPrint from "react-to-print";
+import { 
+  User, 
+  Lock, 
+  LogOut, 
+  FileText, 
+  Receipt, 
+  Trash2, 
+  Edit, 
+  AlertTriangle, 
+  CheckCircle, 
+  X, 
+  Loader 
+} from 'lucide-react';
 
+// --- CONFIGURATION ---
+const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
+
+// --- Custom Modal Component (Replaces alert() and window.confirm()) ---
+const Modal = ({ state, onClose, onConfirm }) => {
+  if (!state.isVisible) return null;
+
+  const isConfirm = state.type === 'CONFIRM';
+
+  return (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 font-sans hide-on-print">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+        {/* Header */}
+        <div className={`flex items-center p-4 ${isConfirm ? 'bg-red-500' : 'bg-indigo-600'} text-white`}>
+          {isConfirm ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
+          <h3 className="ml-3 text-lg font-semibold">
+            {isConfirm ? 'Confirm Action' : 'Notification'}
+          </h3>
+          <button onClick={onClose} className="ml-auto text-white hover:text-gray-200">
+            <X size={20} />
+          </button>
+        </div>
+        
+        {/* Body */}
+        <div className="p-6 text-gray-700">
+          <p>{state.message}</p>
+        </div>
+        
+        {/* Footer */}
+        <div className={`p-4 border-t flex ${isConfirm ? 'justify-between' : 'justify-end'}`}>
+          {isConfirm && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (isConfirm && onConfirm) {
+                onConfirm();
+              }
+              onClose();
+            }}
+            className={`px-4 py-2 rounded-lg transition font-medium ${isConfirm ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+          >
+            {isConfirm ? 'Delete' : 'OK'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// --- Admin Panel Component (Integrated into App.jsx) ---
+const AdminPanel = ({ onLogout }) => {
+  // --- View Model: State ---
+  const [activeTab, setActiveTab] = useState('invoices');
+  const [invoices, setInvoices] = useState([]);
+  const [quotations, setQuotations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [editItem, setEditItem] = useState(null); 
+  const [editValue, setEditValue] = useState('');
+  
+  // Modal State for Alert/Confirm replacements
+  const [modalState, setModalState] = useState({
+    isVisible: false,
+    message: '',
+    type: 'ALERT', // 'ALERT' or 'CONFIRM'
+    onConfirm: null,
+  });
+
+  // Function to show the custom modal
+  const showModal = useCallback((message, type = 'ALERT', callback = null) => {
+    setModalState({
+      isVisible: true,
+      message,
+      type,
+      onConfirm: callback,
+    });
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalState({ isVisible: false, message: '', type: 'ALERT', onConfirm: null });
+  }, []);
+
+
+  // --- View Model: Data Fetching Logic ---
+  const fetchData = useCallback(async (token) => {
+    setLoading(true);
+    setError('');
+    try {
+      // URL UPDATED
+      const response = await fetch(`${BASE_URL}/api/admin/${activeTab}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (activeTab === 'invoices') {
+          setInvoices(data.invoices);
+        } else {
+          setQuotations(data.quotations);
+        }
+      } else {
+        setError(data.error || 'Unknown error during fetch.');
+      }
+    } catch (err) {
+      console.error('Fetch Error:', err);
+      setError('Failed to fetch data. Please check connection and token.');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  // Initial Data Fetch Effect
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      fetchData(token);
+    } else {
+      setError("Unauthorized access. Admin token missing.");
+    }
+  }, [activeTab, fetchData]);
+
+
+  // --- View Model: Action Handlers (CRUD) ---
+
+  const performDelete = async (type, number, token) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // URL UPDATED
+      const response = await fetch(
+        `${BASE_URL}/api/admin/${type.toLowerCase()}/${number}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        showModal(`${type} #${number} deleted successfully`, 'ALERT');
+        fetchData(token);
+      } else {
+        showModal(data.error || 'Delete failed', 'ALERT');
+      }
+    } catch (err) {
+      showModal('Connection error: Failed to reach API.', 'ALERT');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = (type, number) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      showModal("Authentication token missing. Cannot perform delete.", 'ALERT');
+      return;
+    }
+
+    // Open a confirmation modal instead of window.confirm
+    showModal(
+      `Are you sure you want to permanently delete ${type} #${number}? This action cannot be undone.`, 
+      'CONFIRM', 
+      () => performDelete(type, number, token)
+    );
+  };
+
+  const handleEdit = (item) => {
+    setEditItem(item);
+    // Use invoiceValue for consistency, default to 0 if not present
+    const value = item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue !== undefined ? item.quotationValue : 0;
+    setEditValue(value);
+  };
+
+  const saveEdit = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      showModal("Authentication token missing. Cannot save changes.", 'ALERT');
+      return;
+    }
+
+    const type = activeTab === 'invoices' ? 'invoice' : 'quotation';
+    const number = editItem.invoiceNumber || editItem.quotationNumber;
+    
+    setLoading(true);
+
+    try {
+      // URL UPDATED
+      const response = await fetch(
+        `${BASE_URL}/api/admin/${type}/${number}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          // Only sending the value to be updated
+          body: JSON.stringify({ 
+            [`${type}Value`]: parseFloat(editValue) 
+          }) 
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        showModal(`${type} #${number} updated successfully!`, 'ALERT');
+        setEditItem(null);
+        fetchData(token);
+      } else {
+        showModal(data.error || 'Update failed', 'ALERT');
+      }
+    } catch (err) {
+      showModal('Connection error: Failed to update value.', 'ALERT');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // --- View Model: Derived State ---
+  const currentData = activeTab === 'invoices' ? invoices : quotations;
+  
+  // Calculate total value based only on invoices (as quotations are estimates)
+  const totalValue = invoices.reduce( 
+    (sum, item) => sum + (item.invoiceValue || 0),
+    0
+  );
+
+  // --- View ---
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans hide-on-print">
+      <Modal 
+        state={modalState} 
+        onClose={closeModal} 
+        onConfirm={modalState.onConfirm} 
+      />
+
+      {/* Header */}
+      <header className="bg-indigo-700 text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-extrabold tracking-tight">Admin Dashboard</h1>
+          <button
+            onClick={onLogout}
+            className="flex items-center space-x-2 bg-white text-indigo-700 px-4 py-2 rounded-full text-sm font-medium shadow-md hover:bg-gray-200 transition duration-150 ease-in-out"
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {error && (
+            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-sm border-l-4 border-red-500 shadow-md flex items-center">
+               <AlertTriangle size={20} className="mr-3 flex-shrink-0" />
+               <p className="font-medium">{error}</p>
+            </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition">
+            <p className="text-gray-500 text-sm font-medium uppercase">Total Invoices</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{invoices.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition">
+            <p className="text-gray-500 text-sm font-medium uppercase">Total Quotations</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{quotations.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition">
+            <p className="text-gray-500 text-sm font-medium uppercase">Total Invoice Value</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">₹{totalValue.toFixed(2)}</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex bg-white rounded-xl shadow-lg p-1 mb-8">
+          <button
+            onClick={() => setActiveTab('invoices')}
+            className={`flex-1 py-3 rounded-lg text-lg font-semibold transition duration-200 ${
+              activeTab === 'invoices'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            } flex items-center justify-center space-x-2`}
+          >
+            <Receipt size={20} />
+            <span>Invoices</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('quotations')}
+            className={`flex-1 py-3 rounded-lg text-lg font-semibold transition duration-200 ${
+              activeTab === 'quotations'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            } flex items-center justify-center space-x-2`}
+          >
+            <FileText size={20} />
+            <span>Quotations</span>
+          </button>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white rounded-xl shadow-lg overflow-x-auto">
+          {loading ? (
+            <div className="text-center py-20">
+              <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-medium text-lg">Loading data...</p>
+            </div>
+          ) : currentData.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-xl">
+              <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-indigo-200">
+                {activeTab === 'invoices' ? (
+                  <Receipt className="text-indigo-400" size={40} />
+                ) : (
+                  <FileText className="text-indigo-400" size={40} />
+                )}
+              </div>
+              <p className="text-gray-600 font-bold text-xl">
+                No {activeTab} found
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                Your {activeTab} records will appear here after creation.
+              </p>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-indigo-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Bill To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Address
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    GSTIN
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Value
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {currentData.map((item) => (
+                  <tr
+                    key={item.invoiceNumber || item.quotationNumber}
+                    className="hover:bg-indigo-50 transition duration-150"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-3 py-1 bg-indigo-700 text-white text-sm font-bold rounded-full">
+                        {item.invoiceNumber || item.quotationNumber}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {item.billTO}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600 max-w-xs truncate" title={item.customerAddress}>
+                        {item.customerAddress}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-mono text-gray-700">
+                        {item.customerGSTIN || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      {editItem &&
+                      (editItem.invoiceNumber === item.invoiceNumber ||
+                        editItem.quotationNumber === item.quotationNumber) ? (
+                        <input
+                          type="number"
+                          value={editValue}
+                          min="0"
+                          step="0.01"
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                          placeholder="New Value"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-green-600">
+                          ₹{(item.invoiceValue || item.quotationValue || 0).toFixed(2)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <span className="text-xs text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <div className="flex gap-2 justify-center">
+                        {editItem &&
+                        (editItem.invoiceNumber === item.invoiceNumber ||
+                          editItem.quotationNumber === item.quotationNumber) ? (
+                          <>
+                            <button
+                              onClick={saveEdit}
+                              disabled={loading}
+                              className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => { setEditItem(null); setEditValue(''); }}
+                              disabled={loading}
+                              className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"
+                            >
+                              <Edit size={14} /> Edit
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDelete(
+                                  activeTab === 'invoices'
+                                    ? 'invoice'
+                                    : 'quotation',
+                                  item.invoiceNumber || item.quotationNumber
+                                )
+                              }
+                              className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"
+                            >
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+
+// --- Main App Component ---
 function App() {
-  // --- CONFIGURATION ---
-  const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
-
   // --- AUTHENTICATION STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(""); // 'admin' or 'employee'
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  
+  // --- MODAL STATE FOR APP COMPONENT ---
+  const [modalState, setModalState] = useState({
+    isVisible: false,
+    message: '',
+    type: 'ALERT',
+    onConfirm: null,
+  });
 
+  const showModal = useCallback((message, type = 'ALERT', callback = null) => {
+    setModalState({
+      isVisible: true,
+      message,
+      type,
+      onConfirm: callback,
+    });
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalState({ isVisible: false, message: '', type: 'ALERT', onConfirm: null });
+  }, []);
+  
+  // Custom notification function to replace alert()
+  const showNotification = (message, type) => {
+    showModal(message, 'ALERT');
+  };
+  
   // --- INITIAL LOAD CHECK ---
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -3935,7 +4444,8 @@ function App() {
     e.preventDefault();
     setAuthLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/login`, {
+      // URL UPDATED from localhost to BASE_URL
+      const response = await fetch(`${BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -3951,11 +4461,13 @@ function App() {
         setIsAuthenticated(true);
         setUserRole(data.role); 
       } else {
-        alert(data.error || "Invalid Credentials");
+        // Replaced alert()
+        showModal(data.error || "Invalid Credentials", 'ALERT'); 
       }
     } catch (error) {
       console.error("Login Error:", error);
-      alert("Login failed. Check server connection.");
+      // Replaced alert()
+      showModal("Login failed. Check server connection.", 'ALERT'); 
     } finally {
       setAuthLoading(false);
     }
@@ -4009,7 +4521,10 @@ function App() {
     }
     words = words.trim();
     if (fractional > 0) {
-      words += (words ? ' and ' : '') + convertChunk(fractional) + ' Paisa';
+      // Convert fractional part (e.g., 50 for 0.50)
+      let fractionalWords = convertChunk(fractional);
+      // Ensure only valid words are added, use a different separator for Paisa if integer part is present
+      words += (words ? ' and ' : '') + fractionalWords + ' Paisa';
     }
     return words.trim();
   };
@@ -4030,9 +4545,10 @@ function App() {
   const [isItemEditing, setIsItemEditing] = useState(false);
   const [editingItemOriginal, setEditingItemOriginal] = useState(null);
 
-  const showNotification = (message, type) => {
+  // User's original implementation of showNotification (using alert), replaced with modal call
+  /* const showNotification = (message, type) => {
     alert(`${type.toUpperCase()}: ${message}`);
-  };
+  }; */
 
   const [billDetails, setBillDetails] = useState({
     billTO: "",
@@ -4048,6 +4564,27 @@ function App() {
     quantity: "",
     unitPrice: "",
   });
+
+  const generateUniqueNumber = useCallback(async () => {
+    try {
+      // URL UPDATED
+      const url = quotation
+        ? `${BASE_URL}/api/quotation/generate`
+        : `${BASE_URL}/api/invoice/generate`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.success) {
+        setBillDetails(prev => ({
+          ...prev,
+          quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
+        }));
+      }
+    } catch (error) {
+      console.error("Number generation failed", error);
+    }
+  }, [quotation]);
 
   // Reset form when Employee logs in
   useEffect(() => {
@@ -4072,27 +4609,7 @@ function App() {
 
         generateUniqueNumber();
     }
-  }, [invoice, quotation, isAuthenticated, userRole]);
-
-  const generateUniqueNumber = async () => {
-    try {
-      const url = quotation
-        ? `${BASE_URL}/api/quotation/generate`
-        : `${BASE_URL}/api/invoice/generate`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.success) {
-        setBillDetails(prev => ({
-          ...prev,
-          quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
-        }));
-      }
-    } catch (error) {
-      console.error("Number generation failed", error);
-    }
-  };
+  }, [invoice, quotation, isAuthenticated, userRole, generateUniqueNumber]);
 
   useEffect(() => {
     const newTaxableValue = billDetails.items.reduce((acc, item) => {
@@ -4164,6 +4681,7 @@ function App() {
       setLoading(true);
       const documentNumber = billDetails.quotationNumber;
       const urlPath = invoice ? "invoice/update" : "quotation/update";
+      // URL UPDATED
       const url = `${BASE_URL}/api/${urlPath}`;
       const token = localStorage.getItem('adminToken'); // Get Token
 
@@ -4234,6 +4752,7 @@ function App() {
       const finalBody = quotation ? { ...body, quotationNumber: body.invoiceNumber } : body;
       delete finalBody.invoiceNumber;
 
+      // URL UPDATED
       const url = quotation
         ? `${BASE_URL}/api/quotation/save`
         : `${BASE_URL}/api/invoice/save`;
@@ -4268,22 +4787,15 @@ function App() {
     }
   };
 
-  const handleDelete = async () => {
+  const performActualDelete = async () => {
     const docType = invoice ? "Invoice" : "Quotation";
     const documentNumber = billDetails.quotationNumber;
     const token = localStorage.getItem('adminToken'); // Get Token
-
-    if (!documentNumber || !isEditing) {
-      showNotification(`Cannot delete. No existing ${docType} loaded.`, 'info');
-      return;
-    }
-
-    const confirmDelete = window.confirm(`Are you sure you want to delete ${docType} #${documentNumber}? This action cannot be undone.`);
-    if (!confirmDelete) return;
-
+    
     try {
       setLoading(true);
       const urlPath = invoice ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
+      // URL UPDATED
       const url = `${BASE_URL}/api/${urlPath}`;
 
       const response = await fetch(url, { 
@@ -4316,6 +4828,23 @@ function App() {
     }
   };
 
+  const handleDelete = () => {
+    const docType = invoice ? "Invoice" : "Quotation";
+    const documentNumber = billDetails.quotationNumber;
+    
+    if (!documentNumber || !isEditing) {
+      showNotification(`Cannot delete. No existing ${docType} loaded.`, 'info');
+      return;
+    }
+
+    // Replaced window.confirm with custom modal
+    showModal(
+      `Are you sure you want to delete ${docType} #${documentNumber}? This action cannot be undone.`,
+      'CONFIRM',
+      performActualDelete
+    );
+  };
+
   const handleSearch = async (docNumber) => {
     if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
     if (!docNumber) {
@@ -4327,6 +4856,8 @@ function App() {
       setLoading(true);
       setIsEditing(false); 
 
+      // Try searching for quotation first
+      // URL UPDATED
       const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
       let response = await fetch(quoteUrl);
       let result = await response.json();
@@ -4356,7 +4887,10 @@ function App() {
         }
         return; 
       }
-      else if (invoice || !quotation) {
+      
+      // If quotation not found, or if we are in invoice mode, try searching for invoice
+      if (invoice || !quotation) {
+        // URL UPDATED
         const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
         response = await fetch(invoiceUrl);
         result = await response.json();
@@ -4396,18 +4930,24 @@ function App() {
   };
 
   // ============================================
-  //           MAIN RENDERING LOGIC
+  //            MAIN RENDERING LOGIC
   // ============================================
 
   // 1. Not Authenticated -> Show Login Page
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
+        {/* Modal component added */}
+        <Modal 
+          state={modalState} 
+          onClose={closeModal} 
+          onConfirm={modalState.onConfirm} 
+        />
         <script src="https://cdn.tailwindcss.com"></script>
         <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <div className="text-center mb-8">
              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="text-blue-600" size={32} />
+               <Lock className="text-blue-600" size={32} />
              </div>
              <h2 className="text-2xl font-bold text-gray-800">Design Blocks Login</h2>
              <p className="text-gray-500 text-sm mt-2">Sign in to continue</p>
@@ -4451,9 +4991,11 @@ function App() {
             <button 
               type="submit" 
               disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {authLoading ? "Signing In..." : "Sign In"}
+              {authLoading ? (
+                 <Loader size={20} className="animate-spin mr-2" />
+              ) : "Sign In"}
             </button>
           </form>
         </div>
@@ -4469,43 +5011,85 @@ function App() {
   // 3. Authenticated as EMPLOYEE -> Show Invoice Generator
   // (Visible ONLY to employees)
   return (
-    <div className="flex items-center justify-center">
-      <script src="https://cdn.tailwindcss.com"></script>
-      <div className="flex items-center justify-center gap-5 px-5 flex-col py-10 w-full relative">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
+      <Modal 
+        state={modalState} 
+        onClose={closeModal} 
+        onConfirm={modalState.onConfirm} 
+      />
+      
+      {/* Print-specific styles to hide UI elements when printing */}
+      <style>
+        {`
+          @media print {
+            .hide-on-print {
+              display: none !important;
+            }
+            .printable-content {
+              width: 100% !important; 
+              margin: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+              font-size: 10pt; /* Smaller font for print density */
+            }
+            .w-\\[60rem\\] {
+                width: 100% !important;
+            }
+          }
+        `}
+      </style>
+
+      <div className="flex flex-col items-center justify-center gap-5 px-5 py-10 w-full relative">
         
-        {/* Logout Button (Employee View) */}
-        <div className="absolute top-5 right-5">
+        {/* Logout Button (Employee View) - hide-on-print */}
+        <div className="absolute top-5 right-5 hide-on-print">
            <button 
              onClick={handleLogout}
-             className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors"
+             className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors shadow-md"
            >
              <LogOut size={18} />
              Logout
            </button>
         </div>
 
-        {/* --- INVOICE GENERATOR UI --- */}
-        <div className="w-full flex items-center justify-center">
+        {/* --- INVOICE GENERATOR UI - hide-on-print --- */}
+        <div className="w-full flex items-center justify-center hide-on-print">
           <div className="font-sans w-full lg:w-[50rem]">
             <div className="pb-5 text-3xl">
               <p className="font-bold text-blue-500">
                 Design <span className="text-green-400">Blocks</span>
               </p>
             </div>
-             
-             {/* Search */}
+              
+            {/* Search */}
             <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
               <p className="pb-3 text-xl font-semibold uppercase text-purple-600">Search Invoice/Quotation</p>
               <div className="flex flex-col sm:flex-row items-stretch gap-3">
                 <input type="text" placeholder="Enter Invoice/Quotation Number" className="outline-none rounded px-3 py-2 border border-purple-500 shadow-md w-full" value={searchNumber} onChange={(e) => setSearchNumber(e.target.value)} />
-                <button onClick={() => handleSearch(searchNumber)} disabled={loading} className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-purple-600 disabled:opacity-50">{loading ? 'Searching...' : 'Search'}</button>
+                <button 
+                  onClick={() => handleSearch(searchNumber)} 
+                  disabled={loading} 
+                  className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-purple-600 disabled:opacity-50"
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </button>
               </div>
             </div>
 
             {/* Mode Switch */}
             <div className="flex items-center justify-start gap-5 mb-5">
-              <div className={`cursor-pointer px-4 py-1 ${quotation ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} onClick={() => { setQuotation(true); setInvoice(false); }}>Quotation</div>
-              <div className={`cursor-pointer px-4 py-1 ${invoice ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} onClick={() => { setQuotation(false); setInvoice(true); }}>Invoice</div>
+              <div 
+                className={`cursor-pointer px-4 py-1 ${quotation ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+                onClick={() => { setQuotation(true); setInvoice(false); }}
+              >
+                Quotation
+              </div>
+              <div 
+                className={`cursor-pointer px-4 py-1 ${invoice ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+                onClick={() => { setQuotation(false); setInvoice(true); }}
+              >
+                Invoice
+              </div>
             </div>
 
             {/* Document Details */}
@@ -4519,7 +5103,13 @@ function App() {
                     <h1>Quotation Number</h1>
                     <div className="flex items-center border border-blue-500 rounded shadow-md">
                       <input type="text" value={billDetails.associatedQuotationNumber} placeholder={`Enter Q-Number to load`} className="outline-none rounded-l px-2 py-1 flex-1" onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })} />
-                      <button onClick={() => handleSearch(billDetails.associatedQuotationNumber)} disabled={loading} className="bg-blue-500 text-white px-3 py-1 rounded-r h-full hover:bg-blue-600 disabled:opacity-50">Load</button>
+                      <button 
+                        onClick={() => handleSearch(billDetails.associatedQuotationNumber)} 
+                        disabled={loading} 
+                        className="bg-blue-500 text-white px-3 py-1 rounded-r h-full hover:bg-blue-600 disabled:opacity-50"
+                      >
+                        Load
+                      </button>
                     </div>
                   </div>
                 )}
@@ -4554,19 +5144,39 @@ function App() {
             {/* GST & Buttons */}
             <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50"><p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p><div className="flex items-center justify-start gap-5 mt-3"><label onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>SGST</label><label onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>CGST</label></div></div>
             <div className="flex gap-3">
-              <button onClick={handleSaveOrUpdate} disabled={loading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress} className="bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Processing...' : isEditing ? 'Update' : 'Save'}</button>
-              {isEditing && (<button onClick={handleDelete} disabled={loading} className="bg-red-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Deleting...' : 'Delete'}</button>)}
+              <button 
+                onClick={handleSaveOrUpdate} 
+                disabled={loading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress} 
+                className="bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Processing...' : isEditing ? 'Update' : 'Save'}
+              </button>
+              {isEditing && (
+                <button 
+                  onClick={handleDelete} 
+                  disabled={loading} 
+                  className="bg-red-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Deleting...' : 'Delete'}
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Print Button */}
-        <ReactToPrint trigger={() => (<button className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5">Print Receipt</button>)} content={() => printRef.current} pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }" />
+        {/* Replaced ReactToPrint with standard window.print() and a standard button */}
+        <button 
+          onClick={() => window.print()}
+          className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5 hide-on-print"
+        >
+          Print Receipt
+        </button>
 
         {/* Hidden Print Area */}
         <div className="w-full bg-white flex items-center justify-center">
         <div className="w-full xl:w-[60rem]">
-          <div ref={printRef} className="flex flex-col w-[60rem] bg-white text-black">
+          <div ref={printRef} className="flex flex-col w-[60rem] bg-white text-black printable-content">
 
             {/* Header Row */}
             <div className="flex flex-row h-[15rem]">
@@ -4689,13 +5299,14 @@ function App() {
                       </div>
                       <div className="w-1/2 text-right pt-6">
                         <p className="text-sm">For <span className="uppercase font-bold mr-10">Design Blocks</span></p>
+                        <p className="mt-6 text-gray-500">(Authorized Signatory)</p>
                       </div>
                     </div>
                     <div className="text-center mt-3 font-semibold">Thank You</div>
                   </td>
                 </tr>
 
-    {quotation && (
+                {quotation && (
                   <tr>
                     <td colSpan={5} className="p-2 border border-black bg-yellow-50 text-xs">
                       <div className="text-sm">
