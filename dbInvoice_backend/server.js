@@ -487,7 +487,7 @@ const cors = require("cors");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 
 const quotationRoutes=require('./routes/quotationRoutes');
-
+const adminRoutes = require("./routes/adminRoutes");
 const app = express();
 
 // Middlewares
@@ -497,6 +497,7 @@ app.use(express.json());
 // Routes
 app.use("/api/invoice", invoiceRoutes);
 app.use("/api/quotation", require("./routes/quotationRoutes"));
+app.use("/api/admin", adminRoutes);
 
 
 // MongoDB Connection

@@ -92,45 +92,94 @@ exports.generateQuotationNumber = async () => {
 // ===============================================
 // === SAVE QUOTATION (AUTO GENERATES NUMBER) ====
 // ===============================================
+// exports.saveQuotation = async (req, res) => {
+//   try {
+//     const quotationNumber = await exports.generateQuotationNumber();
+//     const data = req.body;
+
+//     // Auto calculate totals per item
+//     data.items = data.items.map((item) => ({
+//       ...item,
+//       total: item.quantity * item.unitPrice
+//     }));
+
+//     const quotation = new Quotation({
+//       quotationNumber,
+//       billTO: data.billTO,
+//       customerAddress: data.customerAddress,
+//       customerGSTIN: data.customerGSTIN,
+//       items: data.items,
+//       sgst: data.sgst,
+//       cgst: data.cgst,
+//       SGSTAmount: data.SGSTAmount,
+//       CGSTAmount: data.CGSTAmount,
+//       taxableValue: data.taxableValue,
+//       invoiceValue: data.invoiceValue
+//     });
+
+//     await quotation.save();
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Quotation saved successfully",
+//       quotationNumber,
+//       quotation
+//     });
+
+//   } catch (err) {
+//     return res.status(500).json({ success: false, error: err.message });
+//   }
+// };
+
+
 exports.saveQuotation = async (req, res) => {
-  try {
-    const quotationNumber = await exports.generateQuotationNumber();
-    const data = req.body;
+    try {
+        const data = req.body;
 
-    // Auto calculate totals per item
-    data.items = data.items.map((item) => ({
-      ...item,
-      total: item.quantity * item.unitPrice
-    }));
+        // 🛑 NEW REQUIREMENT CHECK: SGST and CGST must not both be false.
+        if (!data.sgst && !data.cgst) {
+            return res.status(400).json({
+                success: false,
+                error: "GST or CGST must be applied to save the Quotation."
+            });
+        }
+        // 🛑 NEW REQUIREMENT CHECK ENDS
 
-    const quotation = new Quotation({
-      quotationNumber,
-      billTO: data.billTO,
-      customerAddress: data.customerAddress,
-      customerGSTIN: data.customerGSTIN,
-      items: data.items,
-      sgst: data.sgst,
-      cgst: data.cgst,
-      SGSTAmount: data.SGSTAmount,
-      CGSTAmount: data.CGSTAmount,
-      taxableValue: data.taxableValue,
-      invoiceValue: data.invoiceValue
-    });
+        const quotationNumber = await exports.generateQuotationNumber();
+        
+        // Auto calculate totals per item
+        data.items = data.items.map((item) => ({
+            ...item,
+            total: item.quantity * item.unitPrice
+        }));
 
-    await quotation.save();
+        const quotation = new Quotation({
+            quotationNumber,
+            billTO: data.billTO,
+            customerAddress: data.customerAddress,
+            customerGSTIN: data.customerGSTIN,
+            items: data.items,
+            sgst: data.sgst,
+            cgst: data.cgst,
+            SGSTAmount: data.SGSTAmount,
+            CGSTAmount: data.CGSTAmount,
+            taxableValue: data.taxableValue,
+            invoiceValue: data.invoiceValue
+        });
 
-    return res.status(201).json({
-      success: true,
-      message: "Quotation saved successfully",
-      quotationNumber,
-      quotation
-    });
+        await quotation.save();
 
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
+        return res.status(201).json({
+            success: true,
+            message: "Quotation saved successfully",
+            quotationNumber,
+            quotation
+        });
+
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
 };
-
 
 // ===============================================
 // === FETCH BY QUOTATION NUMBER =================
