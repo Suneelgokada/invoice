@@ -99,12 +99,13 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const Invoice = require("../models/invoice");
 const Quotation = require("../models/quotation");
-
+const { changePassword, verifyToken } = require("../controllers/adminController");
 // ==========================
 //       AUTH ROUTES
 // ==========================
 router.post("/register", adminController.registerAdmin);
 router.post("/login", adminController.loginAdmin);
+router.put("/change-password", verifyToken, changePassword);
 
 // ==========================
 //     PROTECTED ROUTES
