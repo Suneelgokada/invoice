@@ -3017,7 +3017,7 @@ function AdminPanel({ onLogout }) {
     // ----------------------------------------------------
 
     const totalInvoiceValue = invoices.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
-    const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.quotationValue || 0), 0);
+    const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
     const totalQuotationCount = quotations.length;
     const adminListData = activeTab === 'invoices' ? invoices : quotations;
 
@@ -3042,11 +3042,13 @@ function AdminPanel({ onLogout }) {
                         <p className="text-3xl font-bold text-blue-800">{invoices.length}</p>
                         <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalInvoiceValue.toFixed(2)}</p>
                     </div>
+
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
                         <p className="text-gray-500 font-medium">Total Quotations</p>
-                        <p className="text-3xl font-bold text-green-800">{totalQuotationCount}</p>
+                        <p className="text-3xl font-bold text-green-800">{quotations.length}</p>
                         <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalQuotationValue.toFixed(2)}</p>
                     </div>
+
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
                         <p className="text-gray-500 font-medium">Total Documents</p>
                         <p className="text-3xl font-bold text-purple-800">{invoices.length + totalQuotationCount}</p>

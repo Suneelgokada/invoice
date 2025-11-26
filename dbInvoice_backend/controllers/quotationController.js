@@ -164,7 +164,8 @@ exports.saveQuotation = async (req, res) => {
             SGSTAmount: data.SGSTAmount,
             CGSTAmount: data.CGSTAmount,
             taxableValue: data.taxableValue,
-            invoiceValue: data.invoiceValue
+            quotationValue: data.quotationValue,
+            invoiceValue: data.quotationValue
         });
 
         await quotation.save();
@@ -239,7 +240,7 @@ exports.updateQuotation = async (req, res) => {
       SGSTAmount: Number(data.SGSTAmount) || 0,
       CGSTAmount: Number(data.CGSTAmount) || 0,
       taxableValue: Number(data.taxableValue),
-      invoiceValue: Number(data.invoiceValue),
+      quotationValue: Number(data.quotationValue),
       
       // అదనపు ఫీల్డ్స్
       paymentType: data.paymentType || "",

@@ -26,7 +26,7 @@ const QuotationSchema = new mongoose.Schema({
 
   // Total Summary
   taxableValue: { type: Number, required: true },
-  invoiceValue: { type: Number, required: true },
+  quotationValue: { type: Number, required: true },
 
   createdAt: { type: Date, default: Date.now }
 });
