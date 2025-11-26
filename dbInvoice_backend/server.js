@@ -479,25 +479,67 @@
 
 
 
+// require("dotenv").config();
+// const express = require("express");
+// const mongoose = require("mongoose");
+// const cors = require("cors");
+
+// const invoiceRoutes = require("./routes/invoiceRoutes");
+
+// const quotationRoutes=require('./routes/quotationRoutes');
+// const adminRoutes = require("./routes/adminRoutes");
+// const app = express();
+
+// // Middlewares
+// app.use(cors());
+// app.use(express.json());
+
+// // Routes
+// app.use("/api/invoice",  invoiceRoutes);
+// app.use("/api/quotation", require("./routes/quotationRoutes"));
+// app.use("/api/admin", adminRoutes);
+
+
+// // MongoDB Connection
+// mongoose
+//   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => {
+//     console.log("MongoDB Connected Successfully");
+//     app.listen(5000, () => console.log("Server running on port 5000"));
+//   })
+//   .catch((err) => console.log("MongoDB Error:", err));
+
+
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// Import Controllers to access the middleware
+const adminController = require("./controllers/adminController"); 
 const invoiceRoutes = require("./routes/invoiceRoutes");
-
-const quotationRoutes=require('./routes/quotationRoutes');
+const quotationRoutes = require("./routes/quotationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+
 const app = express();
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/invoice", invoiceRoutes);
-app.use("/api/quotation", require("./routes/quotationRoutes"));
+// --- ROUTES MODIFICATION ---
+
+// 1. Admin/Auth Routes: No token required here (for login/register)
 app.use("/api/admin", adminRoutes);
+
+// 2. Invoice & Quotation Routes: ADD the verifyToken middleware to PROTECT these routes.
+// The verifyToken middleware will check the JWT in the request headers.
+
+// Apply token verification to ALL invoice routes
+app.use("/api/invoice", adminController.verifyToken, invoiceRoutes); 
+
+// Apply token verification to ALL quotation routes
+app.use("/api/quotation", adminController.verifyToken, quotationRoutes);
 
 
 // MongoDB Connection
@@ -505,50 +547,7 @@ mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB Connected Successfully");
-    app.listen(5000, () => console.log("Server running on port 5000"));
+    // Ensure the port is correct, e.g., process.env.PORT || 5000
+    app.listen(5000, () => console.log("Server running on port 5000")); 
   })
   .catch((err) => console.log("MongoDB Error:", err));
-
-
-// require("dotenv").config();
-// const express = require("express");
-// const mongoose = require("mongoose");
-// const cors = require("cors");
-
-// const invoiceRoutes = require("./routes/invoiceRoutes");
-// const quotationRoutes = require("./routes/quotationRoutes");
-
-// const app = express();
-
-// // ✅ CORS Configuration
-// app.use(cors({
-//   origin: "https://invoice-frontend-5cme.onrender.com", // your frontend URL
-//   methods: ["GET", "POST", "PUT", "DELETE"],
-//   credentials: true
-// }));
-
-// // ✅ Middleware
-// app.use(express.json());
-
-// // ✅ Routes
-// app.use("/api/invoice", invoiceRoutes);
-// app.use("/api/quotation", quotationRoutes);
-
-// // ✅ Root Route
-// app.get("/", (req, res) => {
-//   res.send("Backend is live!");
-// });
-
-// // ✅ MongoDB Connection
-// mongoose.connect(process.env.MONGO_URI, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true
-// })
-// .then(() => {
-//   console.log("MongoDB Connected Successfully");
-//   const PORT = process.env.PORT || 5000;
-//   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// })
-// .catch((err) => {
-//   console.error("MongoDB Connection Error:", err);
-// });

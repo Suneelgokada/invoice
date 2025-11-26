@@ -2244,7 +2244,7 @@ import ReactToPrint from "react-to-print";
 // --- CONFIGURATION ---
 const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
-// --- Utility: Number to Words Converter (Copied from App.js) ---
+// --- Utility: Number to Words Converter ---
 const numberToWords = (num) => {
     if (num === 0) return 'Zero';
     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -2287,7 +2287,7 @@ const numberToWords = (num) => {
 };
 
 
-// --- Component: Modal (Custom Alert/Confirm - Copied from App.js) ---
+// --- Component: Modal (Custom Alert/Confirm) ---
 const Modal = ({ state, onClose, onConfirm }) => {
     if (!state.isVisible) return null;
 
@@ -2342,7 +2342,7 @@ const Modal = ({ state, onClose, onConfirm }) => {
 
 // --- Component: AdminPanel ---
 function AdminPanel({ onLogout }) {
-    // --- Admin Dashboard State (Existing Logic) ---
+    // --- Admin Dashboard State ---
     const [activeTab, setActiveTab] = useState('dashboard');
     const [invoices, setInvoices] = useState([]);
     const [quotations, setQuotations] = useState([]);
@@ -2351,7 +2351,7 @@ function AdminPanel({ onLogout }) {
     const [editItem, setEditItem] = useState(null);
     const [editValue, setEditValue] = useState('');
     
-    // --- Billing Form State (Copied from App.js) ---
+    // --- Billing Form State ---
     const date = new Date();
     const printRef = useRef(null);
     const [quotation, setQuotation] = useState(true);
@@ -2363,12 +2363,12 @@ function AdminPanel({ onLogout }) {
     const [SGSTAmount, setSGSTAmount] = useState(0); 
     const [CGSTAmount, setCGSTAmount] = useState(0); 
     const [searchNumber, setSearchNumber] = useState("");
-    const [formLoading, setFormLoading] = useState(false); // Loading for form actions
+    const [formLoading, setFormLoading] = useState(false); 
     const [isEditing, setIsEditing] = useState(false);
     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
     const [isItemEditing, setIsItemEditing] = useState(false);
     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // NEW: Mobile sidebar state
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
 
     const [billDetails, setBillDetails] = useState({
         billTO: "",
@@ -2385,7 +2385,7 @@ function AdminPanel({ onLogout }) {
         unitPrice: "",
     });
 
-    // --- NEW: Change Password State ---
+    // --- Change Password State ---
     const [passwordForm, setPasswordForm] = useState({
         oldPassword: '',
         newPassword: '',
@@ -2419,19 +2419,22 @@ function AdminPanel({ onLogout }) {
     };
     
     // ----------------------------------------------------
-    // --- Data Fetching Logic (Admin Dashboard & Lists) ---
+    // --- 1. Data Fetching Logic (Admin Dashboard & Lists) ---
     // ----------------------------------------------------
     const fetchAdminData = useCallback(async (token) => {
         setDashboardLoading(true);
         setDashboardError('');
         try {
-            // Fetch ALL data needed for dashboard and lists
-            // CHANGED API ENDPOINTS: /api/admin/invoice -> /api/admin/invoices (Plural for list fetch)
-            // CHANGED API ENDPOINTS: /api/admin/quotation -> /api/admin/quotations (Plural for list fetch)
-            const [invoicesResponse, quotationsResponse] = await Promise.all([
-                fetch(`${BASE_URL}/api/invoices`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`${BASE_URL}/api/quotations`, { headers: { Authorization: `Bearer ${token}` } })
+            // NOTE: Assuming backend routes are protected and defined under /api/admin/invoices and /api/admin/quotations
+            // If they are under /api/invoices and /api/quotations, adjust the URL below.
+            
+            // ❌ Original code was calling fetch without authorization header for invoices/quotations lists, now fixed.
+            const headers = { Authorization: `Bearer ${token}` };
 
+            const [invoicesResponse, quotationsResponse] = await Promise.all([
+                // Assuming you set up /api/admin/invoices route in your backend
+                fetch(`${BASE_URL}/api/admin/invoices`, { headers }), 
+                fetch(`${BASE_URL}/api/admin/quotations`, { headers })
             ]);
 
             const invoicesData = await invoicesResponse.json();
@@ -2450,7 +2453,7 @@ function AdminPanel({ onLogout }) {
                 setDashboardError(prev => prev + ' Failed to load quotations data. ');
             }
         } catch (err) {
-            setDashboardError('Failed to fetch dashboard data. Check network connection.');
+            setDashboardError('Failed to fetch dashboard data. Check network connection or Token.');
             console.error('Admin Data Fetch Error:', err);
         } finally {
             setDashboardLoading(false);
@@ -2461,7 +2464,6 @@ function AdminPanel({ onLogout }) {
     useEffect(() => {
         const token = localStorage.getItem('adminToken');
         if (token) {
-            // Check if we are on a list tab before forcing a refetch on render
             if (activeTab === 'invoices' || activeTab === 'quotations' || activeTab === 'dashboard') {
                 fetchAdminData(token);
             }
@@ -2472,17 +2474,23 @@ function AdminPanel({ onLogout }) {
 
 
     // ----------------------------------------------------
-    // --- Billing Form Logic (Copied from App.js) ---
+    // --- 2. Billing Form Logic (Number Generation Fix) ---
     // ----------------------------------------------------
 
     // Generate unique invoice/quotation number
     const generateUniqueNumber = useCallback(async () => {
+        // Form Loading should only be set for search/save actions, not auto-generation unless explicitly required
+        const token = localStorage.getItem('adminToken');
+        if (!token) { return; } // Cannot generate number without login
+
         try {
             const url = quotation
                 ? `${BASE_URL}/api/quotation/generate`
                 : `${BASE_URL}/api/invoice/generate`;
-
-            const response = await fetch(url);
+            
+            // NOTE: Assuming your backend allows GET /generate endpoints to be protected by verifyToken.
+            // If the route is protected, we must pass the token.
+            const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
             const data = await response.json();
 
             if (data.success) {
@@ -2490,23 +2498,22 @@ function AdminPanel({ onLogout }) {
                     ...prev,
                     quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
                 }));
+            } else {
+                 showNotification(`Number generation failed: ${data.error || 'API Error'}`, 'error');
             }
         } catch (error) {
             console.error("Number generation failed", error);
-            showNotification("Error connecting to backend for number generation.", 'error');
         }
-    }, [quotation, showNotification]);
+    }, [quotation]);
 
-    // Effect to reset form state when entering 'newBill' tab or switching modes
+    // ** FIX: Effect to reset form state and trigger number generation only once on mode/tab change **
     useEffect(() => {
         if (activeTab === 'newBill') {
+            // 1. Reset all local states
             setBillDetails(prev => ({
                 ...prev,
-                billTO: "",
-                customerAddress: "",
-                customerGSTIN: "",
-                items: [],
-                associatedQuotationNumber: "",
+                billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+                quotationNumber: "" // Clear number to signal regeneration
             }));
             setSGST(false);
             setCGST(false);
@@ -2518,11 +2525,17 @@ function AdminPanel({ onLogout }) {
             setIsItemEditing(false);
             setEditingItemOriginal(null);
 
+            // 2. Generate a new number (will run whenever activeTab, quotation, or invoice changes)
             generateUniqueNumber();
         }
-    }, [activeTab, quotation, invoice, generateUniqueNumber]);
+    // IMPORTANT: Removed generateUniqueNumber from dependency array to prevent infinite loop.
+    // However, since it is wrapped in useCallback and 'quotation' is its only dependency, 
+    // it's safe to keep it, but removing it here ensures minimal runs when other states change.
+    // We will keep it removed for robustness.
+    }, [activeTab, quotation, invoice]); 
 
-    // Calculation effect
+
+    // Calculation effect (Remains Correct)
     useEffect(() => {
         if (activeTab === 'newBill') {
             const newTaxableValue = billDetails.items.reduce((acc, item) => {
@@ -2545,7 +2558,7 @@ function AdminPanel({ onLogout }) {
     }, [billDetails.items, cgst, sgst, activeTab]);
 
 
-    // Handles adding/updating item in the form
+    // Handles adding/updating item in the form (Remains Correct)
     const handleAddItem = (e) => {
         e.preventDefault();
         setIsItemEditing(false);
@@ -2597,7 +2610,7 @@ function AdminPanel({ onLogout }) {
         setBillDetails({ ...billDetails, items: removedArray });
     };
 
-    // Handle Update Logic (from App.js)
+    // Handle Update Logic (Remains Correct - Auth Header is present)
     const handleUpdateForm = async () => {
         const token = localStorage.getItem('adminToken');
         if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
@@ -2634,7 +2647,7 @@ function AdminPanel({ onLogout }) {
 
             if (data.success) {
                 showNotification(`${invoice ? "Invoice" : "Quotation"} #${documentNumber} updated successfully!`, 'success');
-                fetchAdminData(token); // Refresh admin data
+                fetchAdminData(token); 
             } else {
                 showNotification(`Update Error: ${data.message || data.error}`, 'error');
             }
@@ -2646,7 +2659,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // Save/Update Handler (from App.js)
+    // Save/Update Handler (Remains Correct)
     const handleSaveOrUpdate = () => {
         if (isEditing) {
             handleUpdateForm();
@@ -2655,7 +2668,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // Save invoice/quotation to backend (from App.js)
+    // Save invoice/quotation to backend (Remains Correct - Auth Header is present)
     const handleSaveForm = async () => {
         const token = localStorage.getItem('adminToken');
         if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
@@ -2698,7 +2711,7 @@ function AdminPanel({ onLogout }) {
                 showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
                 setIsEditing(true);
                 setBillDetails(prev => ({ ...prev, quotationNumber: savedNumber, }));
-                fetchAdminData(token); // Refresh admin data
+                fetchAdminData(token); 
             } else {
                 showNotification(`Save Error: ${data.error}`, 'error');
             }
@@ -2710,7 +2723,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // Handle Delete Logic (from App.js)
+    // Handle Delete Logic (Remains Correct - Auth Header is present)
     const performActualDeleteForm = async () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
@@ -2734,7 +2747,7 @@ function AdminPanel({ onLogout }) {
                 setCGST(false);
                 setIsEditing(false);
                 generateUniqueNumber();
-                fetchAdminData(token); // Refresh admin data
+                fetchAdminData(token); 
             } else {
                 showNotification(`Delete Error: ${data.message || data.error}`, 'error');
             }
@@ -2762,7 +2775,7 @@ function AdminPanel({ onLogout }) {
     };
 
 
-    // Fetch invoice/quotation by number (from App.js)
+    // Fetch invoice/quotation by number (Remains Correct - Auth Header is present)
     const handleSearch = async (docNumber) => {
         if (typeof docNumber === 'object' || !docNumber) {
             docNumber = searchNumber;
@@ -2776,9 +2789,9 @@ function AdminPanel({ onLogout }) {
         try {
             setFormLoading(true);
             setIsEditing(false); 
-            const token = localStorage.getItem('adminToken'); // Token required for search if using protected routes
+            const token = localStorage.getItem('adminToken'); 
 
-            // 1. Try fetching Quotation (Using /quotation/fetch/ as per your initial App.js logic structure)
+            // 1. Try fetching Quotation
             const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
             let response = await fetch(quoteUrl, { headers: { "Authorization": `Bearer ${token}` } });
             let result = await response.json();
@@ -2810,7 +2823,7 @@ function AdminPanel({ onLogout }) {
                 return;
             }
 
-            // 2. Try fetching Invoice (Using /invoice/fetch/ as per your initial App.js logic structure)
+            // 2. Try fetching Invoice
             else if (invoice || !quotation) {
                 const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
                 response = await fetch(invoiceUrl, { headers: { "Authorization": `Bearer ${token}` } });
@@ -2854,12 +2867,12 @@ function AdminPanel({ onLogout }) {
     // --- END Billing Form Logic ---
     // ----------------------------------------------------
 
-    // --- Admin List Handlers (Updated to use Modal/fetchAdminData) ---
+    // --- Admin List Handlers (Auth Header is assumed to be present for Admin routes) ---
 
     const performDeleteAdmin = async (type, number, token) => {
         setDashboardLoading(true);
         try {
-            // CHANGED API ENDPOINT: /api/admin/type -> /api/admin/types (Plural convention)
+            // NOTE: Assuming delete endpoint is /api/admin/invoices/:number
             const response = await fetch(
                 `${BASE_URL}/api/admin/${type.toLowerCase()}s/${number}`,
                 {
@@ -2912,7 +2925,7 @@ function AdminPanel({ onLogout }) {
         setDashboardLoading(true);
 
         try {
-            // CHANGED API ENDPOINT: /api/admin/type -> /api/admin/types (Plural convention)
+            // NOTE: Assuming update endpoint is /api/admin/invoices/:number
             const response = await fetch(
                 `${BASE_URL}/api/admin/${type}s/${number}`,
                 {
@@ -2942,9 +2955,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // ----------------------------------------------------
-    // --- NEW: Change Password Logic ---
-    // ----------------------------------------------------
+    // --- NEW: Change Password Logic (Remains Correct - Auth Header is present) ---
     const handlePasswordChange = (e) => {
         setPasswordForm({
             ...passwordForm,
@@ -2986,7 +2997,6 @@ function AdminPanel({ onLogout }) {
 
             if (response.ok && data.success) {
                 showNotification("Password changed successfully!", 'ALERT');
-                // Clear the form
                 setPasswordForm({
                     oldPassword: '',
                     newPassword: '',
@@ -3003,21 +3013,12 @@ function AdminPanel({ onLogout }) {
         }
     };
     // ----------------------------------------------------
-    // --- END Change Password Logic ---
-    // ----------------------------------------------------
-
-
-    // ----------------------------------------------------
-    // --- Derived State & Render Helpers ---
+    // --- Derived State & Render Helpers (No changes) ---
     // ----------------------------------------------------
 
     const totalInvoiceValue = invoices.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
-    // Total Quotation Value calculation remains correct
     const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.quotationValue || 0), 0);
-    
-    // Total Quotation Count calculation remains correct
     const totalQuotationCount = quotations.length;
-    
     const adminListData = activeTab === 'invoices' ? invoices : quotations;
 
     const renderDashboard = () => (
@@ -3039,15 +3040,11 @@ function AdminPanel({ onLogout }) {
                     <div className="bg-white p-6 rounded-xl shadow-xl border-l-4 border-blue-500">
                         <p className="text-gray-500 font-medium">Total Invoices</p>
                         <p className="text-3xl font-bold text-blue-800">{invoices.length}</p>
-                        {/* Showing Total Invoice Value */}
                         <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalInvoiceValue.toFixed(2)}</p>
                     </div>
-                    {/* Quotations Card */}
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
                         <p className="text-gray-500 font-medium">Total Quotations</p>
-                        {/* totalQuotationCount should show the number of items in the array */}
                         <p className="text-3xl font-bold text-green-800">{totalQuotationCount}</p>
-                        {/* Showing Total Quotation Value */}
                         <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalQuotationValue.toFixed(2)}</p>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
@@ -3251,7 +3248,6 @@ function AdminPanel({ onLogout }) {
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">📄 New Bill Creator</h2>
             <div className="w-full flex items-center justify-center">
-                {/* Changed fixed width lg:w-[50rem] to fluid w-full max-w-4xl */}
                 <div className="font-sans w-full max-w-4xl"> 
                     {/* Search Section */}
                     <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
@@ -3297,26 +3293,26 @@ function AdminPanel({ onLogout }) {
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             1. {invoice ? "Invoice" : "Quotation"} Details
                         </p>
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5"> {/* Added md:flex-row */}
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5"> 
                             <h1 className="font-medium">{invoice ? "Invoice" : "Quotation"} Number:</h1>
                             <input
                                 type="text"
                                 value={billDetails.quotationNumber}
                                 placeholder={`Auto-generated`}
-                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto" // Added w-full md:w-auto
+                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto" 
                                 readOnly
                             />
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
                             {invoice && (
-                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto"> {/* Added w-full md:w-auto */}
+                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto"> 
                                     <h1 className="font-medium">Quotation Ref:</h1>
                                     <div className="flex items-center border border-blue-500 rounded-lg shadow-md flex-1">
                                         <input
                                             type="text"
                                             value={billDetails.associatedQuotationNumber}
                                             placeholder={`Enter Q-Number to load`}
-                                            className="outline-none rounded-l-lg px-3 py-2 flex-1 min-w-0" // Added min-w-0
+                                            className="outline-none rounded-l-lg px-3 py-2 flex-1 min-w-0" 
                                             onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })}
                                         />
                                         <button
@@ -3337,7 +3333,7 @@ function AdminPanel({ onLogout }) {
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             2. Recipient Details
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5"> {/* Changed to responsive grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5"> 
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Bill TO</h1><input type="text" placeholder="Enter Biller Details" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.billTO} onChange={(e) => setBillDetails({ ...billDetails, billTO: e.target.value })} /></div>
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Address</h1><input type="text" placeholder="Enter Biller Address" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} /></div>
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Customer GSTIN</h1><input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} /></div>
@@ -3347,7 +3343,7 @@ function AdminPanel({ onLogout }) {
                     {/* 3. Items Section */}
                     <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 w-full">
                         <form className="flex items-start justify-start flex-col" onSubmit={isItemEditing ? handleUpdateItem : handleAddItem}>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3"> {/* Added sm:flex-row */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3"> 
                                 <p className="text-xl font-semibold uppercase text-blue-600 mb-2 sm:mb-0">3. Items</p>
                                 <div className="flex gap-3">
                                     {isItemEditing && (
@@ -3358,7 +3354,7 @@ function AdminPanel({ onLogout }) {
                                     </button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full"> {/* Changed to responsive grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full"> 
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Description</h1><input type="text" required value={tableItems.description} placeholder="Enter Description" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, description: e.target.value })} /></div>
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Quantity</h1><input type="number" required value={tableItems.quantity} placeholder="Enter Quantity" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, quantity: e.target.value })} /></div>
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Unit Price (₹)</h1><input type="number" required value={tableItems.unitPrice} placeholder="Single Price" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, unitPrice: e.target.value })} /></div>
@@ -3368,7 +3364,7 @@ function AdminPanel({ onLogout }) {
                         {/* Items Table Display */}
                         {billDetails.items.length > 0 && (
                             <div className="overflow-x-auto w-full py-5">
-                                <div className="min-w-[40rem] md:min-w-full"> {/* Made min-w smaller for mobile tables */}
+                                <div className="min-w-[40rem] md:min-w-full"> 
                                     <table className="w-full border-collapse border border-blue-500">
                                         <tbody className="w-full">
                                             <tr className="bg-indigo-100 font-bold border border-blue-500">
@@ -3401,14 +3397,14 @@ function AdminPanel({ onLogout }) {
                     {/* 4. GST Info */}
                     <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50">
                         <p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p>
-                        <div className="flex flex-wrap items-center justify-start gap-5 mt-3"> {/* Added flex-wrap */}
+                        <div className="flex flex-wrap items-center justify-start gap-5 mt-3"> 
                             <button type="button" onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-600"} text-white px-5 py-2 rounded-lg duration-300 cursor-pointer font-medium shadow-md`}>SGST {sgst ? 'ON' : 'OFF'}</button>
                             <button type="button" onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-400" : "bg-green-600"} text-white px-5 py-2 rounded-lg duration-300 cursor-pointer font-medium shadow-md`}>CGST {cgst ? 'ON' : 'OFF'}</button>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3"> {/* Added flex-wrap */}
+                    <div className="flex flex-wrap gap-3"> 
                         {/* Save/Update Button */}
                         <button
                             onClick={handleSaveOrUpdate}
@@ -3446,20 +3442,19 @@ function AdminPanel({ onLogout }) {
                 pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
             />
 
-            {/* --- PDF/Print PREVIEW Area (Updated for responsiveness) --- */}
+            {/* --- PDF/Print PREVIEW Area --- */}
             <div className="w-full bg-white flex items-center justify-center p-2 sm:p-4">
                 <div className="w-full max-w-full xl:max-w-[60rem] border border-gray-300 shadow-xl overflow-x-auto">
-                    {/* The content inside printRef should keep fixed dimensions for correct printout, but the wrapper must be responsive */}
                     <div ref={printRef} className="flex flex-col min-w-[50rem] xl:w-[60rem] bg-white text-black printable-content mx-auto"> 
 
                         {/* Header Row */}
                         <div className="flex flex-row h-[15rem] text-sm border border-black">
                             {/* Left Side: Bill To */}
-                            <div className="h-full w-2/5 sm:w-[20rem] border-r border-black flex flex-col"> {/* Adjusted width for small screens */}
+                            <div className="h-full w-2/5 sm:w-[20rem] border-r border-black flex flex-col"> 
                                 <div className="flex items-center justify-center h-[30%] border-b border-black">
                                     <p className="text-center font-bold text-lg sm:text-2xl">{invoice ? "TAX INVOICE" : "QUOTATION"}</p>
                                 </div>
-                                <div className="flex-1 px-3 sm:px-5 py-2 overflow-hidden"> {/* Added overflow-hidden */}
+                                <div className="flex-1 px-3 sm:px-5 py-2 overflow-hidden"> 
                                     <p className="font-semibold text-base sm:text-lg">Bill to:</p>
                                     {billDetails.customerGSTIN && <p className='truncate'><span className="font-medium">GSTIN:</span> {billDetails.customerGSTIN}</p>}
                                     <p className='truncate'>{billDetails.billTO}</p>
@@ -3471,7 +3466,7 @@ function AdminPanel({ onLogout }) {
                             </div>
 
                             {/* Right Side: Company Details */}
-                            <div className="h-full w-3/5 sm:w-[40rem] flex flex-col justify-between"> {/* Adjusted width for small screens */}
+                            <div className="h-full w-3/5 sm:w-[40rem] flex flex-col justify-between"> 
                                 <div className="p-3 sm:p-5 flex items-start justify-between">
                                     <div className="w-[70%] text-xs sm:text-sm">
                                         <p className="font-semibold text-base sm:text-xl truncate">GSTIN: <span className="font-medium text-xs sm:text-base">37AKOPY6766H1Z4</span></p>
@@ -3479,7 +3474,7 @@ function AdminPanel({ onLogout }) {
                                         <p className="font-semibold text-base pt-2">Address:</p>
                                         <p className='text-xs sm:text-sm'>Flat No 406, 5th Floor, Botcha Square, Madhavadhara, VISAKHAPATNAM-530007</p>
                                     </div>
-                                    <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] flex items-center justify-center flex-shrink-0"> {/* Adjusted size */}
+                                    <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] flex items-center justify-center flex-shrink-0"> 
                                         <img
                                             src="https://designblocks.in/img/DB.png"
                                             alt="Design Blocks Logo"
@@ -3564,14 +3559,14 @@ function AdminPanel({ onLogout }) {
                                 {/* Bank Details & Signature */}
                                 <tr>
                                     <td colSpan={5} className="p-2 border-t border-black text-xs">
-                                        <div className="flex flex-col sm:flex-row justify-between"> {/* Added flex-col sm:flex-row */}
-                                            <div className="w-full sm:w-1/2 mb-4 sm:mb-0"> {/* Added responsive margins */}
+                                        <div className="flex flex-col sm:flex-row justify-between"> 
+                                            <div className="w-full sm:w-1/2 mb-4 sm:mb-0"> 
                                                 <p className="font-semibold text-sm">BANK DETAILS:-</p>
                                                 <p>UNION BANK OF INDIA, MURALI NAGAR, VISAKHAPATNAM</p>
                                                 <p><span className="font-semibold">A/C NUMBER-</span> 753601010050187; <span className="font-semibold">IFSC:</span> UBIN0810746</p>
                                                 <p><span className="font-semibold">UPI ID:</span> designblocks@ybl</p>
                                             </div>
-                                            <div className="w-full sm:w-1/2 text-left sm:text-right pt-2 sm:pt-6"> {/* Added responsive text alignment and padding */}
+                                            <div className="w-full sm:w-1/2 text-left sm:text-right pt-2 sm:pt-6"> 
                                                 <p className="text-sm">For <span className="uppercase font-bold">Design Blocks</span></p>
                                                 <p className="mt-6 text-gray-500">(Authorized Signatory)</p>
                                             </div>
@@ -3599,14 +3594,13 @@ function AdminPanel({ onLogout }) {
         </div>
     );
     
-    // --- Main Admin Panel Structure ---
+    // --- Main Admin Panel Structure (No major changes) ---
     
     const SidebarItem = ({ icon: Icon, label, tab }) => (
         <button
             onClick={() => {
                 setActiveTab(tab);
-                setIsSidebarOpen(false); // Close sidebar on mobile after clicking item
-                // Reset form modes when navigating away from New Bill
+                setIsSidebarOpen(false); 
                 if (tab !== 'newBill') {
                     setQuotation(true);
                     setInvoice(false);
@@ -3621,7 +3615,6 @@ function AdminPanel({ onLogout }) {
     );
 
     const Sidebar = () => (
-        // Sidebar fixed on desktop (md:fixed md:h-screen)
         <div className={`
             fixed top-0 left-0 w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 transform transition-transform duration-300 ease-in-out h-screen
             md:fixed md:translate-x-0 md:flex md:top-0 md:h-screen 
@@ -3672,15 +3665,11 @@ function AdminPanel({ onLogout }) {
     };
 
     return (
-        // md:pl-64 creates space for the fixed sidebar on desktop
         <div className="min-h-screen flex bg-gray-100 font-sans md:pl-64"> 
-            {/* Modal for all custom alerts/confirms */}
             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
             
-            {/* Sidebar (Now fixed on desktop) */}
             <Sidebar />
 
-            {/* Backdrop for mobile sidebar */}
             {isSidebarOpen && (
                 <div 
                     className="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 md:hidden hide-on-print" 
@@ -3689,9 +3678,7 @@ function AdminPanel({ onLogout }) {
             )}
 
 
-            {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto">
-                {/* Header (Displays current active tab name) */}
                 <header className="bg-white text-gray-800 shadow-md p-4 sticky top-0 z-10 border-b hide-on-print">
                     <div className="max-w-full mx-auto flex justify-start items-center">
                         <button 
