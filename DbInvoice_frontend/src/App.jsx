@@ -5517,25 +5517,40 @@ function App() {
 
     // --- Invoice Generator Handlers ---
 
-    const generateUniqueNumber = useCallback(async () => {
-        try {
-            const url = quotation
-                ? `${BASE_URL}/api/quotation/generate`
-                : `${BASE_URL}/api/invoice/generate`;
+ const generateUniqueNumber = useCallback(async () => {
+    const token = localStorage.getItem('adminToken');   // 🔑 get token
+    if (!token) {
+        console.error("No token found. Cannot generate number.");
+        return;
+    }
 
-            const response = await fetch(url);
-            const data = await response.json();
+    try {
+        const url = quotation
+            ? `${BASE_URL}/api/quotation/generate`
+            : `${BASE_URL}/api/invoice/generate`;
 
-            if (data.success) {
-                setBillDetails(prev => ({
-                    ...prev,
-                    quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
-                }));
+        const response = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${token}`,      // ✅ attach token
+                "Content-Type": "application/json"
             }
-        } catch (error) {
-            console.error("Number generation failed", error);
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            setBillDetails(prev => ({
+                ...prev,
+                quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
+            }));
+        } else {
+            console.error("Number generation failed:", data.error || data.message);
         }
-    }, [quotation]);
+    } catch (error) {
+        console.error("Number generation failed", error);
+    }
+}, [quotation]);
+
 
     const handleAddItem = (e) => {
         e.preventDefault();
@@ -5751,87 +5766,98 @@ function App() {
         );
     };
 
-    const handleSearch = async (docNumber) => {
-        if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
-        if (!docNumber) {
-            showNotification("Please enter a document number to search.", 'info');
+const handleSearch = async (docNumber) => {
+    if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
+    if (!docNumber) {
+        showNotification("Please enter a document number to search.", 'info');
+        return;
+    }
+
+    try {
+        setLoading(true);
+        setIsEditing(false); 
+
+        const token = localStorage.getItem('adminToken');   // ✅ get token
+        if (!token) {
+            showNotification("Authentication token missing. Cannot search.", 'error');
             return;
         }
 
-        try {
-            setLoading(true);
-            setIsEditing(false); 
+        // --- Try searching for quotation first ---
+        const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
+        let response = await fetch(quoteUrl, {
+            headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
+        });
+        let result = await response.json();
 
-            // Try searching for quotation first
-            const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
-            let response = await fetch(quoteUrl);
-            let result = await response.json();
+        if (response.ok && result.quotation) {
+            const quote = result.quotation;
+            setBillDetails(prev => ({
+                ...prev,
+                billTO: quote.billTO || "",
+                customerAddress: quote.customerAddress || "",
+                customerGSTIN: quote.customerGSTIN || "",
+                items: quote.items || [],
+                associatedQuotationNumber: docNumber, 
+            }));
+            setSGST(quote.sgst || false);
+            setCGST(quote.cgst || false);
+            setOriginalQuotationNumber(quote.quotationNumber);
 
-            if (response.ok && result.quotation) {
-                const quote = result.quotation;
+            if (invoice) {
+                setIsEditing(false);
+                setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber })); 
+                showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
+            } else {
+                setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
+                setIsEditing(true); 
+                showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
+            }
+            return; 
+        }
+        
+        // --- If quotation not found, or if we are in invoice mode, try searching for invoice ---
+        if (invoice || !quotation) {
+            const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
+            response = await fetch(invoiceUrl, {
+                headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
+            });
+            result = await response.json();
+
+            if (response.ok && result.invoice) {
+                const inv = result.invoice;
                 setBillDetails(prev => ({
                     ...prev,
-                    billTO: quote.billTO || "",
-                    customerAddress: quote.customerAddress || "",
-                    customerGSTIN: quote.customerGSTIN || "",
-                    items: quote.items || [],
-                    associatedQuotationNumber: docNumber, 
+                    billTO: inv.billTO || "",
+                    customerAddress: inv.customerAddress || "",
+                    customerGSTIN: inv.customerGSTIN || "",
+                    quotationNumber: inv.invoiceNumber,
+                    items: inv.items || [],
+                    associatedQuotationNumber: inv.originalQuotationNumber || '', 
                 }));
-                setSGST(quote.sgst || false);
-                setCGST(quote.cgst || false);
-                setOriginalQuotationNumber(quote.quotationNumber);
+                setSGST(inv.sgst || false);
+                setCGST(inv.cgst || false);
+                setOriginalQuotationNumber(inv.originalQuotationNumber || null);
 
-                if (invoice) {
-                    setIsEditing(false);
-                    setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber })); 
-                    showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
-                } else {
-                    setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
-                    setIsEditing(true); 
-                    showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
-                }
+                setIsEditing(true); 
+                showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
                 return; 
             }
-            
-            // If quotation not found, or if we are in invoice mode, try searching for invoice
-            if (invoice || !quotation) {
-                const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
-                response = await fetch(invoiceUrl);
-                result = await response.json();
-
-                if (response.ok && result.invoice) {
-                    const inv = result.invoice;
-                    setBillDetails(prev => ({
-                        ...prev,
-                        billTO: inv.billTO || "",
-                        customerAddress: inv.customerAddress || "",
-                        customerGSTIN: inv.customerGSTIN || "",
-                        quotationNumber: inv.invoiceNumber,
-                        items: inv.items || [],
-                        associatedQuotationNumber: inv.originalQuotationNumber || '', 
-                    }));
-                    setSGST(inv.sgst || false);
-                    setCGST(inv.cgst || false);
-                    setOriginalQuotationNumber(inv.originalQuotationNumber || null);
-
-                    setIsEditing(true); 
-                    showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
-                    return; 
-                }
-            }
-
-            setIsEditing(false);
-            setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "" }));
-            generateUniqueNumber();
-            showNotification(`Document #${docNumber} not found.`, 'error');
-
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            showNotification('Error fetching data. Check server connection.', 'error');
-        } finally {
-            setLoading(false);
         }
-    };
+
+        setIsEditing(false);
+        setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "" }));
+        generateUniqueNumber();
+        showNotification(`Document #${docNumber} not found.`, 'error');
+
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        showNotification('Error fetching data. Check server connection.', 'error');
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     // --- END Invoice Generator Handlers ---
     // --- Authentication Handlers ---
