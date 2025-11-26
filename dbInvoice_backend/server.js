@@ -538,11 +538,9 @@ app.use("/api/admin", adminRoutes);
 // Apply token verification to ALL invoice routes
 app.use("/api/invoice", adminController.verifyToken, invoiceRoutes); 
 
-// Apply token verification to ALL quotation routes
+
 app.use("/api/quotation", adminController.verifyToken, quotationRoutes);
 
-
-// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {

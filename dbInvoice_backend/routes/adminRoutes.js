@@ -100,6 +100,14 @@ const adminController = require("../controllers/adminController");
 const Invoice = require("../models/invoice");
 const Quotation = require("../models/quotation");
 const { changePassword, verifyToken } = require("../controllers/adminController");
+const invoiceController = require('../controllers/invoiceController');
+const quotationController = require('../controllers/quotationController');
+// ...
+
+// PROTECTED ROUTES FOR ADMIN DASHBOARD LISTS
+router.get('/invoices', adminController.verifyToken, invoiceController.fetchAllInvoices);
+
+router.get('/quotations', adminController.verifyToken, quotationController.fetchAllQuotations);
 // ==========================
 //       AUTH ROUTES
 // ==========================

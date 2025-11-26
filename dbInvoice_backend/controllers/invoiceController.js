@@ -274,3 +274,21 @@ exports.deleteInvoice = async (req, res) => {
     });
   }
 };
+
+
+exports.fetchAllInvoices = async (req, res) => {
+    try {
+        // Find all documents and sort by creation date descending
+        const invoices = await Invoice.find().sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            invoices: invoices 
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: "Error fetching all invoices: " + err.message
+        });
+    }
+};

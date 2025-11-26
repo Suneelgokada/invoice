@@ -313,3 +313,22 @@ exports.deleteQuotation = async (req, res) => {
     });
   }
 };
+
+
+
+exports.fetchAllQuotations = async (req, res) => {
+    try {
+        // Find all documents and sort by creation date descending
+        const quotations = await Quotation.find().sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            quotations: quotations
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: "Error fetching all quotations: " + err.message
+        });
+    }
+};

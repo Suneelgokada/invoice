@@ -2433,8 +2433,8 @@ function AdminPanel({ onLogout }) {
 
             const [invoicesResponse, quotationsResponse] = await Promise.all([
                 // Assuming you set up /api/admin/invoices route in your backend
-                fetch(`${BASE_URL}/api/invoices`, { headers }), 
-                fetch(`${BASE_URL}/api/quotations`, { headers })
+                fetch(`${BASE_URL}/api/admin/invoices`, { headers }), 
+                fetch(`${BASE_URL}/api/admin/quotations`, { headers }) 
             ]);
 
             const invoicesData = await invoicesResponse.json();
