@@ -6715,7 +6715,7 @@ const handleSave = async () => {
         console.log("📤 Sending payload:", body); // Debug log
 
         const url = quotation
-            ?  `http://localhost:5000/api/quotation/save`
+            ? `${BASE_URL}/api/quotation/save`
             : `${BASE_URL}/api/invoice/save`;
 
         const res = await fetch(url, {
