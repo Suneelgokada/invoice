@@ -3937,12 +3937,12 @@
 //             <X size={20} />
 //           </button>
 //         </div>
-        
+
 //         {/* Body */}
 //         <div className="p-6 text-gray-700">
 //           <p>{state.message}</p>
 //         </div>
-        
+
 //         {/* Footer */}
 //         <div className={`p-4 border-t flex ${isConfirm ? 'justify-between' : 'justify-end'}`}>
 //           {isConfirm && (
@@ -3981,7 +3981,7 @@
 //   const [error, setError] = useState('');
 //   const [editItem, setEditItem] = useState(null); 
 //   const [editValue, setEditValue] = useState('');
-  
+
 //   // Modal State for Alert/Confirm replacements
 //   const [modalState, setModalState] = useState({
 //     isVisible: false,
@@ -4114,7 +4114,7 @@
 
 //     const type = activeTab === 'invoices' ? 'invoice' : 'quotation';
 //     const number = editItem.invoiceNumber || editItem.quotationNumber;
-    
+
 //     setLoading(true);
 
 //     try {
@@ -4152,7 +4152,7 @@
 
 //   // --- View Model: Derived State ---
 //   const currentData = activeTab === 'invoices' ? invoices : quotations;
-  
+
 //   // Calculate total value based only on invoices (as quotations are estimates)
 //   const totalValue = invoices.reduce( 
 //     (sum, item) => sum + (item.invoiceValue || 0),
@@ -4398,7 +4398,7 @@
 //   const [username, setUsername] = useState("");
 //   const [password, setPassword] = useState("");
 //   const [authLoading, setAuthLoading] = useState(false);
-  
+
 //   // --- MODAL STATE FOR APP COMPONENT ---
 //   const [modalState, setModalState] = useState({
 //     isVisible: false,
@@ -4419,12 +4419,12 @@
 //   const closeModal = useCallback(() => {
 //     setModalState({ isVisible: false, message: '', type: 'ALERT', onConfirm: null });
 //   }, []);
-  
+
 //   // Custom notification function to replace alert()
 //   const showNotification = (message, type) => {
 //     showModal(message, 'ALERT');
 //   };
-  
+
 //   // --- INITIAL LOAD CHECK ---
 //   useEffect(() => {
 //     const token = localStorage.getItem('adminToken');
@@ -4453,7 +4453,7 @@
 //         // Save Token and Role
 //         localStorage.setItem('adminToken', data.token);
 //         localStorage.setItem('userRole', data.role);
-        
+
 //         setIsAuthenticated(true);
 //         setUserRole(data.role); 
 //       } else {
@@ -4481,7 +4481,7 @@
 
 //   // --- INVOICE GENERATOR STATE & LOGIC ---
 //   const date = new Date();
-  
+
 //   const numberToWords = (num) => {
 //     if (num === 0) return 'Zero';
 //     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -4787,7 +4787,7 @@
 //     const docType = invoice ? "Invoice" : "Quotation";
 //     const documentNumber = billDetails.quotationNumber;
 //     const token = localStorage.getItem('adminToken'); // Get Token
-    
+
 //     try {
 //       setLoading(true);
 //       const urlPath = invoice ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
@@ -4827,7 +4827,7 @@
 //   const handleDelete = () => {
 //     const docType = invoice ? "Invoice" : "Quotation";
 //     const documentNumber = billDetails.quotationNumber;
-    
+
 //     if (!documentNumber || !isEditing) {
 //       showNotification(`Cannot delete. No existing ${docType} loaded.`, 'info');
 //       return;
@@ -4883,7 +4883,7 @@
 //         }
 //         return; 
 //       }
-      
+
 //       // If quotation not found, or if we are in invoice mode, try searching for invoice
 //       if (invoice || !quotation) {
 //         // URL UPDATED
@@ -4948,7 +4948,7 @@
 //              <h2 className="text-2xl font-bold text-gray-800">Design Blocks Login</h2>
 //              <p className="text-gray-500 text-sm mt-2">Sign in to continue</p>
 //           </div>
-          
+
 //           <form onSubmit={handleLogin} className="space-y-6">
 //             <div>
 //               <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
@@ -5013,7 +5013,7 @@
 //         onClose={closeModal} 
 //         onConfirm={modalState.onConfirm} 
 //       />
-      
+
 //       {/* Print-specific styles to hide UI elements when printing */}
 //       <style>
 //         {`
@@ -5036,7 +5036,7 @@
 //       </style>
 
 //       <div className="flex flex-col items-center justify-center gap-5 px-5 py-10 w-full relative">
-        
+
 //         {/* Logout Button (Employee View) - hide-on-print */}
 //         <div className="absolute top-5 right-5 hide-on-print">
 //            <button 
@@ -5056,7 +5056,7 @@
 //                 Design <span className="text-green-400">Blocks</span>
 //               </p>
 //             </div>
-              
+
 //             {/* Search */}
 //             <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
 //               <p className="pb-3 text-xl font-semibold uppercase text-purple-600">Search Invoice/Quotation</p>
@@ -5328,25 +5328,1045 @@
 
 
 
+// import React, { useState, useRef, useEffect, useCallback } from "react";
+// import { 
+//     User, 
+//     Lock, 
+//     LogOut, 
+//     FileText, 
+//     Receipt, 
+//     Trash2, 
+//     Edit, 
+//     AlertTriangle, 
+//     CheckCircle, 
+//     X, 
+//     Loader,
+//     PlusSquare,
+//     Home,
+//     ClipboardList
+// } from 'lucide-react';
+// import AdminPanel from "./AdminPanel"; // Assuming AdminPanel.jsx exists
+// import ReactToPrint from "react-to-print"; 
+
+// // --- CONFIGURATION ---
+// const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
+
+// // --- Utility: Number to Words Converter ---
+// const numberToWords = (num) => {
+//     if (num === 0) return 'Zero';
+//     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+//     const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+//     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+//     const scales = ['', 'Thousand', 'Million'];
+
+//     const convertChunk = (n) => {
+//         if (n === 0) return '';
+//         if (n < 10) return units[n];
+//         if (n < 20) return teens[n - 10];
+//         if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + units[n % 10] : '');
+//         return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + convertChunk(n % 100) : '');
+//     };
+
+//     let words = '';
+//     let i = 0;
+//     const roundedNum = parseFloat(num.toFixed(2));
+//     const [intPart, fracPart] = roundedNum.toString().split('.');
+//     let integer = parseInt(intPart);
+//     const fractional = fracPart ? parseInt(fracPart) : 0;
+
+//     if (integer > 999999999) return 'Value too large';
+
+//     while (integer > 0) {
+//         const chunk = integer % 1000;
+//         if (chunk !== 0) {
+//             let chunkWords = convertChunk(chunk);
+//             words = chunkWords + (scales[i] ? ' ' + scales[i] : '') + ' ' + words;
+//         }
+//         integer = Math.floor(integer / 1000);
+//         i++;
+//     }
+//     words = words.trim();
+//     if (fractional > 0) {
+//         let fractionalWords = convertChunk(fractional);
+//         words += (words ? ' and ' : '') + fractionalWords + ' Paisa';
+//     }
+//     return words.trim();
+// };
+
+
+// // --- Custom Modal Component (Replaces alert() and window.confirm()) ---
+// const Modal = ({ state, onClose, onConfirm }) => {
+//     if (!state.isVisible) return null;
+
+//     const isConfirm = state.type === 'CONFIRM';
+
+//     return (
+//         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 font-sans hide-on-print">
+//             <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+//                 {/* Header */}
+//                 <div className={`flex items-center p-4 ${isConfirm ? 'bg-red-500' : 'bg-indigo-600'} text-white`}>
+//                     {isConfirm ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
+//                     <h3 className="ml-3 text-lg font-semibold">
+//                         {isConfirm ? 'Confirm Action' : 'Notification'}
+//                     </h3>
+//                     <button onClick={onClose} className="ml-auto text-white hover:text-gray-200">
+//                         <X size={20} />
+//                     </button>
+//                 </div>
+
+//                 {/* Body */}
+//                 <div className="p-6 text-gray-700">
+//                     <p>{state.message}</p>
+//                 </div>
+
+//                 {/* Footer */}
+//                 <div className={`p-4 border-t flex ${isConfirm ? 'justify-between' : 'justify-end'}`}>
+//                     {isConfirm && (
+//                         <button
+//                             onClick={onClose}
+//                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+//                         >
+//                             Cancel
+//                         </button>
+//                     )}
+//                     <button
+//                         onClick={() => {
+//                             if (isConfirm && onConfirm) {
+//                                 onConfirm();
+//                             }
+//                             onClose();
+//                         }}
+//                         className={`px-4 py-2 rounded-lg transition font-medium ${isConfirm ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+//                     >
+//                         {isConfirm ? 'Confirm' : 'OK'}
+//                     </button>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+
+// // --- Main App Component ---
+// function App() {
+//     // --- AUTHENTICATION STATE ---
+//     const [isAuthenticated, setIsAuthenticated] = useState(false);
+//     const [userRole, setUserRole] = useState(""); 
+//     const [username, setUsername] = useState("");
+//     const [password, setPassword] = useState("");
+//     const [authLoading, setAuthLoading] = useState(false);
+
+//     // --- MODAL STATE ---
+//     const [modalState, setModalState] = useState({
+//         isVisible: false,
+//         message: '',
+//         type: 'ALERT',
+//         onConfirm: null,
+//     });
+
+//     const showModal = useCallback((message, type = 'ALERT', callback = null) => {
+//         setModalState({
+//             isVisible: true,
+//             message,
+//             type,
+//             onConfirm: callback,
+//         });
+//     }, []);
+
+//     const closeModal = useCallback(() => {
+//         setModalState({ isVisible: false, message: '', type: 'ALERT', onConfirm: null });
+//     }, []);
+
+//     const showNotification = (message, type) => {
+//         showModal(message, 'ALERT');
+//     };
+
+//     // --- Invoice Generator State (Employee View) ---
+//     const date = new Date();
+//     const printRef = useRef(null);
+//     const [quotation, setQuotation] = useState(true);
+//     const [invoice, setInvoice] = useState(false);
+//     const [sgst, setSGST] = useState(false);
+//     const [cgst, setCGST] = useState(false);
+//     const [taxableValue, setTaxableValue] = useState(0);
+//     const [invoiceValue, setInvoiceValue] = useState(0);
+//     const [SGST, setSGSTValue] = useState(0);
+//     const [CGST, setCGSTValue] = useState(0);
+//     const [searchNumber, setSearchNumber] = useState("");
+//     const [loading, setLoading] = useState(false);
+//     const [isEditing, setIsEditing] = useState(false);
+//     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
+//     const [isItemEditing, setIsItemEditing] = useState(false);
+//     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
+
+//     const [billDetails, setBillDetails] = useState({
+//         billTO: "",
+//         customerAddress: "",
+//         customerGSTIN: "",
+//         quotationNumber: "",
+//         associatedQuotationNumber: "",
+//         items: [],
+//         documentDate: new Date().toISOString().split('T')[0],
+//     });
+
+//     const [tableItems, setTableItems] = useState({
+//         description: "",
+//         quantity: "",
+//         unitPrice: "",
+//     });
+//     // --- END Invoice Generator State ---
+
+//     // --- Invoice Generator Handlers ---
+
+//  const generateUniqueNumber = useCallback(async () => {
+//     const token = localStorage.getItem('adminToken');   // 🔑 get token
+//     if (!token) {
+//         console.error("No token found. Cannot generate number.");
+//         return;
+//     }
+
+//     try {
+//         const url = quotation
+//             ? `${BASE_URL}/api/quotation/generate`
+//             : `${BASE_URL}/api/invoice/generate`;
+
+//         const response = await fetch(url, {
+//             headers: {
+//                 "Authorization": `Bearer ${token}`,      // ✅ attach token
+//                 "Content-Type": "application/json"
+//             }
+//         });
+
+//         const data = await response.json();
+
+//         if (data.success) {
+//             setBillDetails(prev => ({
+//                 ...prev,
+//                 quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
+//             }));
+//         } else {
+//             console.error("Number generation failed:", data.error || data.message);
+//         }
+//     } catch (error) {
+//         console.error("Number generation failed", error);
+//     }
+// }, [quotation]);
+
+
+//     const handleAddItem = (e) => {
+//         e.preventDefault();
+//         setIsItemEditing(false);
+//         setEditingItemOriginal(null);
+//         setBillDetails({
+//             ...billDetails,
+//             items: [...billDetails.items, { ...tableItems, quantity: Number(tableItems.quantity), unitPrice: Number(tableItems.unitPrice), id: Date.now() }], 
+//         });
+//         setTableItems({ description: "", quantity: "", unitPrice: "" });
+//     };
+
+//     const handleEditItem = (item) => {
+//         setTableItems({
+//             description: item.description,
+//             quantity: item.quantity,
+//             unitPrice: item.unitPrice
+//         });
+//         setIsItemEditing(true);
+//         setEditingItemOriginal(item);
+//     };
+
+//     const handleUpdateItem = (e) => {
+//         e.preventDefault();
+//         if (!editingItemOriginal) return;
+//         const index = billDetails.items.findIndex(item => item === editingItemOriginal);
+//         if (index > -1) {
+//             const updatedItems = [...billDetails.items];
+//             updatedItems[index] = {
+//                 ...updatedItems[index], 
+//                 description: tableItems.description,
+//                 quantity: Number(tableItems.quantity),
+//                 unitPrice: Number(tableItems.unitPrice)
+//             };
+//             setBillDetails({ ...billDetails, items: updatedItems });
+//         }
+//         setTableItems({ description: "", quantity: "", unitPrice: "" });
+//         setIsItemEditing(false);
+//         setEditingItemOriginal(null);
+//     };
+
+//     const handleItem = (item) => {
+//         let removedArray = billDetails.items.filter(e => e !== item);
+//         setBillDetails({ ...billDetails, items: removedArray });
+//     };
+
+//     const handleUpdate = async () => {
+//         const token = localStorage.getItem('adminToken'); 
+//         if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
+
+//         try {
+//             setLoading(true);
+//             const documentNumber = billDetails.quotationNumber;
+//             const urlPath = invoice ? "invoice/update" : "quotation/update";
+//             const url = `${BASE_URL}/api/${urlPath}`;
+
+//             const body = {
+//                 [invoice ? "invoiceNumber" : "quotationNumber"]: documentNumber,
+//                 billTO: billDetails.billTO,
+//                 customerAddress: billDetails.customerAddress,
+//                 customerGSTIN: billDetails.customerGSTIN,
+//                 items: billDetails.items,
+//                 sgst: sgst,
+//                 cgst: cgst,
+//                 taxableValue: taxableValue,
+//                 SGSTAmount: SGST,
+//                 CGSTAmount: CGST,
+//                 invoiceValue: invoiceValue,
+//                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+//             };
+
+//             const res = await fetch(url, {
+//                 method: "PUT", 
+//                 headers: { 
+//                     "Content-Type": "application/json",
+//                     "Authorization": `Bearer ${token}` 
+//                 },
+//                 body: JSON.stringify(body)
+//             });
+
+//             const data = await res.json();
+
+//             if (data.success) {
+//                 showNotification(`${invoice ? "Invoice" : "Quotation"} #${documentNumber} updated successfully!`, 'success');
+//             } else {
+//                 showNotification(`Update Error: ${data.message || data.error}`, 'error');
+//             }
+//         } catch (err) {
+//             console.error(err);
+//             showNotification("Unexpected error during update.", 'error');
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const handleSaveOrUpdate = () => {
+//         if (isEditing) handleUpdate();
+//         else handleSave();
+//     };
+
+//     const handleSave = async () => {
+//         const token = localStorage.getItem('adminToken');
+//         if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
+
+//         try {
+//             setLoading(true);
+
+//              const body = {
+//                 billTO: billDetails.billTO,
+//                 customerAddress: billDetails.customerAddress,
+//                 customerGSTIN: billDetails.customerGSTIN,
+//                 items: billDetails.items,
+//                 sgst,
+//                 cgst,
+//                 taxableValue,
+//                 SGSTAmount: SGST,
+//                 CGSTAmount: CGST,
+//                 invoiceValue, // ✅ always send invoiceValue
+//                 invoiceNumber: billDetails.quotationNumber,
+//                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+//                 documentDate: billDetails.documentDate, // ✅ send date
+//             };
+
+//             const finalBody = quotation ? { ...body, quotationNumber: body.invoiceNumber } : body;
+//             delete finalBody.invoiceNumber;
+
+//             const url = quotation
+//                 ? `${BASE_URL}/api/quotation/save`
+//                 : `${BASE_URL}/api/invoice/save`;
+
+//             const res = await fetch(url, {
+//                 method: "POST",
+//                 headers: { 
+//                     "Content-Type": "application/json",
+//                     "Authorization": `Bearer ${token}` 
+//                 },
+//                 body: JSON.stringify(finalBody)
+//             });
+
+//             const data = await res.json();
+
+//             if (data.success) {
+//                 const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
+//                 showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
+//                 setIsEditing(true);
+//                 setBillDetails(prev => ({
+//                     ...prev,
+//                     quotationNumber: savedNumber,
+//                 }));
+//             } else {
+//                 showNotification(`Save Error: ${data.error}`, 'error');
+//             }
+//         } catch (err) {
+//             console.error(err);
+//             showNotification("Unexpected error during save.", 'error');
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const performActualDelete = async () => {
+//         const docType = invoice ? "Invoice" : "Quotation";
+//         const documentNumber = billDetails.quotationNumber;
+//         const token = localStorage.getItem('adminToken'); 
+
+//         try {
+//             setLoading(true);
+//             const urlPath = invoice ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
+//             const url = `${BASE_URL}/api/${urlPath}`;
+
+//             const response = await fetch(url, { 
+//                 method: "DELETE",
+//                 headers: { 
+//                     "Content-Type": "application/json",
+//                     "Authorization": `Bearer ${token}` 
+//                 },
+//             });
+//             const data = await response.json();
+
+//             if (response.ok && data.success) {
+//                 showNotification(`${docType} #${documentNumber} deleted successfully!`, 'success');
+//                 setBillDetails(prev => ({
+//                     ...prev,
+//                     billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+//                 }));
+//                 setSGST(false);
+//                 setCGST(false);
+//                 setIsEditing(false);
+//                 generateUniqueNumber(); 
+//             } else {
+//                 showNotification(`Delete Error: ${data.message || data.error}`, 'error');
+//             }
+//         } catch (err) {
+//             console.error('Error deleting data:', err);
+//             showNotification('Error deleting data. Check server connection.', 'error');
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const handleDelete = () => {
+//         const docType = invoice ? "Invoice" : "Quotation";
+//         const documentNumber = billDetails.quotationNumber;
+
+//         if (!documentNumber || !isEditing) {
+//             showNotification(`Cannot delete. No existing ${docType} loaded.`, 'info');
+//             return;
+//         }
+
+//         showModal(
+//             `Are you sure you want to delete ${docType} #${documentNumber}? This action cannot be undone.`,
+//             'CONFIRM',
+//             performActualDelete
+//         );
+//     };
+
+// const handleSearch = async (docNumber) => {
+//     if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
+//     if (!docNumber) {
+//         showNotification("Please enter a document number to search.", 'info');
+//         return;
+//     }
+
+//     try {
+//         setLoading(true);
+//         setIsEditing(false); 
+
+//         const token = localStorage.getItem('adminToken');   // ✅ get token
+//         if (!token) {
+//             showNotification("Authentication token missing. Cannot search.", 'error');
+//             return;
+//         }
+
+//         // --- Try searching for quotation first ---
+//         const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
+//         let response = await fetch(quoteUrl, {
+//             headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
+//         });
+//         let result = await response.json();
+
+//         if (response.ok && result.quotation) {
+//             const quote = result.quotation;
+//             setBillDetails(prev => ({
+//                 ...prev,
+//                 billTO: quote.billTO || "",
+//                 customerAddress: quote.customerAddress || "",
+//                 customerGSTIN: quote.customerGSTIN || "",
+//                 items: quote.items || [],
+//                 associatedQuotationNumber: docNumber, 
+//             }));
+//             setSGST(quote.sgst || false);
+//             setCGST(quote.cgst || false);
+//             setOriginalQuotationNumber(quote.quotationNumber);
+
+//             if (invoice) {
+//                 setIsEditing(false);
+//                 setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber })); 
+//                 showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
+//             } else {
+//                 setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
+//                 setIsEditing(true); 
+//                 showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
+//             }
+//             return; 
+//         }
+
+//         // --- If quotation not found, or if we are in invoice mode, try searching for invoice ---
+//         if (invoice || !quotation) {
+//             const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
+//             response = await fetch(invoiceUrl, {
+//                 headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
+//             });
+//             result = await response.json();
+
+//             if (response.ok && result.invoice) {
+//                 const inv = result.invoice;
+//                 setBillDetails(prev => ({
+//                     ...prev,
+//                     billTO: inv.billTO || "",
+//                     customerAddress: inv.customerAddress || "",
+//                     customerGSTIN: inv.customerGSTIN || "",
+//                     quotationNumber: inv.invoiceNumber,
+//                     items: inv.items || [],
+//                     associatedQuotationNumber: inv.originalQuotationNumber || '', 
+//                 }));
+//                 setSGST(inv.sgst || false);
+//                 setCGST(inv.cgst || false);
+//                 setOriginalQuotationNumber(inv.originalQuotationNumber || null);
+
+//                 setIsEditing(true); 
+//                 showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
+//                 return; 
+//             }
+//         }
+
+//         setIsEditing(false);
+//         setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "" }));
+//         generateUniqueNumber();
+//         showNotification(`Document #${docNumber} not found.`, 'error');
+
+//     } catch (error) {
+//         console.error('Error fetching data:', error);
+//         showNotification('Error fetching data. Check server connection.', 'error');
+//     } finally {
+//         setLoading(false);
+//     }
+// };
+
+
+//     // --- END Invoice Generator Handlers ---
+//     // --- Authentication Handlers ---
+
+//     const handleLogin = async (e) => {
+//         e.preventDefault();
+//         setAuthLoading(true);
+//         try {
+//             const response = await fetch(`${BASE_URL}/api/admin/login`, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ username, password })
+//             });
+
+//             const data = await response.json();
+
+//             if (data.success) {
+//                 localStorage.setItem('adminToken', data.token);
+//                 localStorage.setItem('userRole', data.role);
+
+//                 setIsAuthenticated(true);
+//                 setUserRole(data.role); 
+//             } else {
+//                 showModal(data.error || "Invalid Credentials", 'ALERT'); 
+//             }
+//         } catch (error) {
+//             console.error("Login Error:", error);
+//             showModal("Login failed. Check server connection.", 'ALERT'); 
+//         } finally {
+//             setAuthLoading(false);
+//         }
+//     };
+
+//     const handleLogout = useCallback(() => {
+//         localStorage.removeItem('adminToken');
+//         localStorage.removeItem('userRole');
+//         setIsAuthenticated(false);
+//         setUserRole("");
+//         setUsername("");
+//         setPassword("");
+//     }, []);
+//     // --- END Authentication Handlers ---
+
+//     // --- Effects for Employee Logic ---
+
+//     // 1. Initial Load Check
+//     useEffect(() => {
+//         const token = localStorage.getItem('adminToken');
+//         const role = localStorage.getItem('userRole');
+//         if (token) {
+//             setIsAuthenticated(true);
+//             setUserRole(role || "employee"); 
+//         }
+//     }, []);
+
+//     // 2. Invoice Generator Calculations
+//     useEffect(() => {
+//         if (isAuthenticated && userRole === 'employee') {
+//             const newTaxableValue = billDetails.items.reduce((acc, item) => {
+//                 const quantity = Number(item.quantity) || 0;
+//                 const unitPrice = Number(item.unitPrice) || 0;
+//                 return acc + quantity * unitPrice;
+//             }, 0);
+
+//             const gstRate = 0.09;
+//             const currentSGST = sgst ? (newTaxableValue * gstRate) : 0;
+//             const currentCGST = cgst ? (newTaxableValue * gstRate) : 0;
+//             const totalValue = newTaxableValue + currentSGST + currentCGST;
+
+//             setSGSTValue(currentSGST.toFixed(2));
+//             setCGSTValue(currentCGST.toFixed(2));
+//             setTaxableValue(newTaxableValue);
+//             setInvoiceValue(totalValue);
+//         }
+//     }, [billDetails.items, cgst, sgst, isAuthenticated, userRole]);
+
+
+//     // 3. Reset form on mode change
+//     useEffect(() => {
+//          if (isAuthenticated && userRole === 'employee') {
+//             setBillDetails(prev => ({
+//                 ...prev,
+//                 billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+//             }));
+//             setSGST(false);
+//             setCGST(false);
+//             setTaxableValue(0);
+//             setInvoiceValue(0);
+//             setOriginalQuotationNumber(null);
+//             setSearchNumber("");
+//             setIsEditing(false); 
+//             setIsItemEditing(false); 
+//             setEditingItemOriginal(null);
+
+//             generateUniqueNumber();
+//         }
+//     }, [invoice, quotation, isAuthenticated, userRole, generateUniqueNumber]);
+
+//     // --- RENDER LOGIC ---
+
+//     // 1. Not Authenticated -> Show Login Page
+//     if (!isAuthenticated) {
+//         return (
+//             <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
+//                 <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
+//                 <script src="https://cdn.tailwindcss.com"></script>
+//                 <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+//                     <div className="text-center mb-8">
+//                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+//                             <Lock className="text-blue-600" size={32} />
+//                         </div>
+//                         <h2 className="text-2xl font-bold text-gray-800">Design Blocks Login</h2>
+//                         <p className="text-gray-500 text-sm mt-2">Sign in to continue</p>
+//                     </div>
+
+//                     <form onSubmit={handleLogin} className="space-y-6">
+//                         <div>
+//                             <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+//                             <div className="relative">
+//                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                                     <User className="text-gray-400" size={18} />
+//                                 </div>
+//                                 <input 
+//                                     type="text" 
+//                                     required
+//                                     value={username}
+//                                     onChange={(e) => setUsername(e.target.value)}
+//                                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+//                                     placeholder="Enter username"
+//                                 />
+//                             </div>
+//                         </div>
+
+//                         <div>
+//                             <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+//                             <div className="relative">
+//                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+//                                     <Lock className="text-gray-400" size={18} />
+//                                 </div>
+//                                 <input 
+//                                     type="password" 
+//                                     required
+//                                     value={password}
+//                                     onChange={(e) => setPassword(e.target.value)}
+//                                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+//                                     placeholder="Enter password"
+//                                 />
+//                             </div>
+//                         </div>
+
+//                         <button 
+//                             type="submit" 
+//                             disabled={authLoading}
+//                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+//                         >
+//                             {authLoading ? (
+//                                 <Loader size={20} className="animate-spin mr-2" />
+//                             ) : "Sign In"}
+//                         </button>
+//                     </form>
+//                 </div>
+//             </div>
+//         );
+//     }
+
+//     // 2. Authenticated as ADMIN -> Show Admin Panel (Delegated to AdminPanel.jsx)
+//     if (userRole === "admin") {
+//         return (
+//             <div className="min-h-screen w-full">
+//                  <script src="https://cdn.tailwindcss.com"></script>
+//                  <AdminPanel onLogout={handleLogout} />
+//             </div>
+//         );
+//     }
+
+//     // 3. Authenticated as EMPLOYEE -> Show Invoice Generator UI (Restored Logic)
+//     return (
+//         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
+//             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
+//             <script src="https://cdn.tailwindcss.com"></script>
+
+//             {/* Print-specific styles to hide UI elements when printing */}
+//             <style>
+//                 {`
+//                     @media print {
+//                         .hide-on-print {
+//                             display: none !important;
+//                         }
+//                         .printable-content {
+//                             width: 100% !important; 
+//                             margin: 0 !important;
+//                             box-shadow: none !important;
+//                             border: none !important;
+//                             font-size: 10pt; /* Smaller font for print density */
+//                         }
+//                         .w-\\[60rem\\] {
+//                             width: 100% !important;
+//                         }
+//                     }
+//                 `}
+//             </style>
+
+//             <div className="flex flex-col items-center justify-center gap-5 px-5 py-10 w-full relative">
+
+//                 {/* Logout Button (Employee View) - hide-on-print */}
+//                 <div className="absolute top-5 right-5 hide-on-print">
+//                     <button 
+//                         onClick={handleLogout}
+//                         className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors shadow-md"
+//                     >
+//                         <LogOut size={18} />
+//                         Logout
+//                     </button>
+//                 </div>
+
+//                 {/* --- INVOICE GENERATOR UI - hide-on-print --- */}
+//                 <div className="w-full flex items-center justify-center hide-on-print">
+//                     <div className="font-sans w-full lg:w-[50rem]">
+//                         <div className="pb-5 text-3xl">
+//                             <p className="font-bold text-blue-500">
+//                                 Design <span className="text-green-400">Blocks</span>
+//                             </p>
+//                             <p className="text-gray-500 text-sm">Employee Billing Portal</p>
+//                         </div>
+
+//                         {/* Search */}
+//                         <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
+//                             <p className="pb-3 text-xl font-semibold uppercase text-purple-600">Search Invoice/Quotation</p>
+//                             <div className="flex flex-col sm:flex-row items-stretch gap-3">
+//                                 <input type="text" placeholder="Enter Invoice/Quotation Number" className="outline-none rounded px-3 py-2 border border-purple-500 shadow-md w-full" value={searchNumber} onChange={(e) => setSearchNumber(e.target.value)} />
+//                                 <button 
+//                                     onClick={() => handleSearch(searchNumber)} 
+//                                     disabled={loading} 
+//                                     className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-purple-600 disabled:opacity-50"
+//                                 >
+//                                     {loading ? 'Searching...' : 'Search'}
+//                                 </button>
+//                             </div>
+//                         </div>
+
+//                         {/* Mode Switch */}
+//                         <div className="flex items-center justify-start gap-5 mb-5">
+//                             <div 
+//                                 className={`cursor-pointer px-4 py-1 ${quotation ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+//                                 onClick={() => { setQuotation(true); setInvoice(false); }}
+//                             >
+//                                 Quotation
+//                             </div>
+//                             <div 
+//                                 className={`cursor-pointer px-4 py-1 ${invoice ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+//                                 onClick={() => { setQuotation(false); setInvoice(true); }}
+//                             >
+//                                 Invoice
+//                             </div>
+//                         </div>
+
+//                         {/* Document Details */}
+//                         <div className="border-dashed border-2 border-slate-400 rounded-lg p-5 bg-gray-50">
+//                             <p className="pb-3 text-xl font-semibold uppercase text-blue-600">1. {invoice ? "Invoice" : "Quotation"} Details</p>
+//                             <div className="flex items-center justify-start flex-wrap gap-3">
+//                                 <h1>{invoice ? "Invoice" : "Quotation"} Number</h1>
+//                                 <input type="text" value={billDetails.quotationNumber} placeholder={`Auto-generated`} className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md bg-gray-100" readOnly />
+//                                 {invoice && (
+//                                     <div className="flex items-center gap-3 mt-3">
+//                                         <h1>Quotation Number</h1>
+//                                         <div className="flex items-center border border-blue-500 rounded shadow-md">
+//                                             <input type="text" value={billDetails.associatedQuotationNumber} placeholder={`Enter Q-Number to load`} className="outline-none rounded-l px-2 py-1 flex-1" onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })} />
+//                                             <button 
+//                                                 onClick={() => handleSearch(billDetails.associatedQuotationNumber)} 
+//                                                 disabled={loading} 
+//                                                 className="bg-blue-500 text-white px-3 py-1 rounded-r h-full hover:bg-blue-600 disabled:opacity-50"
+//                                             >
+//                                                 Load
+//                                             </button>
+//                                         </div>
+//                                     </div>
+//                                 )}
+//                             </div>
+//                         </div>
+
+//                         {/* Recipient Details */}
+//                         <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50">
+//                             <p className="pb-3 text-xl font-semibold uppercase text-blue-600">2. Recipient Details</p>
+//                             <div className="flex items-start justify-start flex-wrap gap-3">
+//                                 <div className="flex items-start justify-center flex-col gap-2"><h1>Bill TO</h1><input type="text" placeholder="Enter Biller Details" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.billTO} onChange={(e) => setBillDetails({ ...billDetails, billTO: e.target.value })} /></div>
+//                                 <div className="flex items-start justify-center flex-col gap-2"><h1>Address</h1><input type="text" placeholder="Enter Biller Address" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} /></div>
+//                                 <div className="flex items-start justify-center flex-col gap-2"><h1>Customer GSTIN</h1><input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} /></div>
+//                             </div>
+//                         </div>
+
+//                         {/* Items */}
+//                         <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50 w-full">
+//                             <form className="flex items-start justify-start flex-col" onSubmit={isItemEditing ? handleUpdateItem : handleAddItem}>
+//                                 <div className="flex flex-row items-center justify-between w-full pb-3"><p className="text-xl font-semibold uppercase text-blue-600">3. Items</p><div className="flex gap-3">{isItemEditing && (<button type="button" onClick={() => { setIsItemEditing(false); setEditingItemOriginal(null); setTableItems({ description: "", quantity: "", unitPrice: "" }); }} className="bg-yellow-500 px-3 py-2 rounded-md text-white shadow-md hover:bg-yellow-600">Cancel Edit</button>)}<button type="submit" className={`px-3 py-2 rounded-md text-green-950 shadow-md ${isItemEditing ? 'bg-orange-400 hover:bg-orange-500' : 'bg-green-400 hover:bg-green-500'}`}>{isItemEditing ? 'Update Item' : 'Add'}</button></div></div>
+//                                 <div className="flex items-center justify-start flex-wrap gap-3">
+//                                     <div className="flex items-start justify-center flex-col gap-2"><h1>Description</h1><input type="text" required value={tableItems.description} placeholder="Enter Description" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, description: e.target.value })} /></div>
+//                                     <div className="flex items-start justify-center flex-col gap-2"><h1>Quantity</h1><input type="number" required value={tableItems.quantity} placeholder="Enter Quantity" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, quantity: e.target.value })} /></div>
+//                                     <div className="flex items-start justify-center flex-col gap-2"><h1>Unit Price</h1><input type="number" required value={tableItems.unitPrice} placeholder="Single Product Price" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, unitPrice: e.target.value })} /></div>
+//                                 </div>
+//                             </form>
+//                             {billDetails.items.length > 0 && (
+//                                 <div className="overflow-x-scroll w-full py-5"><div className="w-full min-w-[50rem]"><table className="w-full"><tbody className="w-full"><tr className="bg-gray-200 font-bold"><td className="border border-blue-500 px-3 py-2 w-[5%] text-center">#</td><td className="border border-blue-500 px-3 py-2 w-[45%]">Description</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-center">Qty</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Unit Price</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Total Price</td><td className="px-3 w-[5%] text-center">Action</td></tr>{billDetails.items.map((item, index) => (<tr key={index} className="odd:bg-white even:bg-gray-100 cursor-pointer hover:bg-blue-100 transition duration-150" onClick={() => handleEditItem(item)}><td className="border border-blue-500 px-3 py-2 text-center">{index + 1}</td><td className="border border-blue-500 px-3 py-2">{item.description}</td><td className="border border-blue-500 px-3 py-2 text-center">{item.quantity}</td><td className="border border-blue-500 px-3 py-2 text-right">{Number(item.unitPrice).toFixed(2)}</td><td className="border border-blue-500 px-3 py-2 text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td><td className="px-3"><p className="bg-red-500 px-2 py-1 rounded-lg text-center cursor-pointer text-white text-xs inline-block" onClick={(e) => { e.stopPropagation(); handleItem(item); }}>Delete</p></td></tr>))}</tbody></table></div></div>
+//                             )}
+//                         </div>
+
+//                         {/* GST & Buttons */}
+//                         <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50"><p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p><div className="flex items-center justify-start gap-5 mt-3"><label onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>SGST</label><label onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>CGST</label></div></div>
+//                         <div className="flex gap-3">
+//                             <button 
+//                                 onClick={handleSaveOrUpdate} 
+//                                 disabled={loading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress} 
+//                                 className="bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+//                             >
+//                                 {loading ? 'Processing...' : isEditing ? 'Update' : 'Save'}
+//                             </button>
+//                             {isEditing && (
+//                                 <button 
+//                                     onClick={handleDelete} 
+//                                     disabled={loading} 
+//                                     className="bg-red-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+//                                 >
+//                                     {loading ? 'Deleting...' : 'Delete'}
+//                                 </button>
+//                             )}
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 {/* Print Button */}
+//                 <ReactToPrint
+//                     trigger={() => (
+//                         <button className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5 hide-on-print">
+//                             Print Receipt
+//                         </button>
+//                     )}
+//                     content={() => printRef.current}
+//                     pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
+//                 />
+
+//                 {/* Hidden Print Area */}
+//                 <div className="w-full bg-white flex items-center justify-center">
+//                     <div className="w-full xl:w-[60rem]">
+//                         <div ref={printRef} className="flex flex-col w-[60rem] bg-white text-black printable-content">
+
+//                             {/* Header Row */}
+//                             <div className="flex flex-row h-[15rem]">
+//                                 <div className="h-full w-[20rem] border border-black">
+//                                     <div className="flex items-center justify-center h-[30%]">
+//                                         <p className="text-center font-bold text-2xl">{invoice ? "Invoice" : "Quotation"}</p>
+//                                     </div>
+//                                     <div className="h-[70%] border-t border-black px-5 py-2 text-sm">
+//                                         <p className="font-semibold text-lg">Bill to:</p>
+//                                         {billDetails.customerGSTIN && <p><span className="font-medium">GSTIN:</span> {billDetails.customerGSTIN}</p>}
+//                                         <p>{billDetails.billTO}</p>
+//                                         <p>{billDetails.customerAddress}</p>
+//                                         {invoice && billDetails.associatedQuotationNumber && (
+//                                             <p className="mt-2 text-xs">Quotation Ref: <span className="font-semibold">{billDetails.associatedQuotationNumber}</span></p>
+//                                         )}
+//                                     </div>
+//                                 </div>
+
+//                                 <div className="h-full w-[40rem] border border-black flex flex-col justify-between">
+//                                     <div className="p-5 flex items-center justify-between">
+//                                         <div className="w-[70%] text-sm">
+//                                             <p className="font-semibold text-xl">GSTIN: <span className="font-medium text-base">37AKOPY6766H1Z4</span></p>
+//                                             <p className="font-medium">DESIGN BLOCKS</p>
+//                                             <p className="font-semibold text-lg pt-2">Address:</p>
+//                                             <p>Flat No 406, 5th Floor, Botcha Square, Madhavadhara, VISAKHAPATNAM-530007</p>
+//                                         </div>
+//                                         <div className="w-[100px] h-[100px] flex items-center justify-center">
+//                                             <img
+//                                                 src="https://designblocks.in/img/DB.png"
+//                                                 alt="Design Blocks Logo"
+//                                                 onError={(e) => {
+//                                                     e.target.onerror = null;
+//                                                     e.target.src = "https://placehold.co/100x100/A0B9FF/000?text=DB+LOGO";
+//                                                 }}
+//                                             />
+//                                         </div>
+//                                     </div>
+//                                     <div className="flex justify-between h-10 px-5 border-t border-black text-sm">
+//                                         <p className="font-semibold text-lg">{invoice ? "Invoice" : "Quotation"} No: <span className="font-normal">{billDetails.quotationNumber}</span></p>
+//                                         <p>Date: <span>{date.toLocaleDateString("en-GB")}</span></p>
+//                                     </div>
+//                                 </div>
+//                             </div>
+
+//                             <div className="h-10 w-full border-x border-black"></div>
+
+//                             {/* Items Table */}
+//                             <table className="w-[60rem] text-sm">
+//                                 <thead>
+//                                     <tr className="h-10 bg-gray-100 font-bold">
+//                                         <td className="border border-black text-center w-[5%]">Item</td>
+//                                         <td className="border border-black text-center w-[30rem]">Description</td>
+//                                         <td className="border border-black text-center w-[10%]">Quantity</td>
+//                                         <td className="border border-black text-center w-[15%]">Unit Price (Rs.)</td>
+//                                         <td className="border border-black text-center w-[20%]">Total Price (Rs.)</td>
+//                                     </tr>
+//                                 </thead>
+//                                 <tbody className="border border-black">
+//                                     {billDetails.items.length > 0 ? billDetails.items.map((items, key) => (
+//                                         <tr key={key} className="h-10">
+//                                             <td className="text-center border border-black">{key + 1}.</td>
+//                                             <td className="px-2 border border-black">{items.description}</td>
+//                                             <td className="px-2 border border-black text-center">{items.quantity}</td>
+//                                             <td className="px-2 border border-black text-right">{Number(items.unitPrice).toFixed(2)}</td>
+//                                             <td className="px-2 border border-black text-right">{(items.quantity * items.unitPrice).toFixed(2)}</td>
+//                                         </tr>
+//                                     )) : (
+//                                         <tr className="h-20">
+//                                             <td colSpan={5} className="text-center text-gray-500 border border-black">No items added.</td>
+//                                         </tr>
+//                                     )}
+
+//                                     {/* Totals */}
+//                                     <tr className="border border-black h-10 bg-yellow-50">
+//                                         <td colSpan={3}></td>
+//                                         <td className="px-2 text-red-700 font-semibold border border-black text-right">Taxable Value</td>
+//                                         <td className="px-2 border border-black text-right font-medium">{taxableValue.toFixed(2)}</td>
+//                                     </tr>
+
+//                                     {sgst && (
+//                                         <tr className="h-8 border border-black">
+//                                             <td colSpan={3}></td>
+//                                             <td className="px-2 border border-black font-semibold text-right">SGST @ 9.00%</td>
+//                                             <td className="border border-black px-2 text-right font-medium">{SGST}</td>
+//                                         </tr>
+//                                     )}
+//                                     {cgst && (
+//                                         <tr className="h-8 border border-black">
+//                                             <td colSpan={3}></td>
+//                                             <td className="px-2 border border-black font-semibold text-right">CGST @ 9.00%</td>
+//                                             <td className="border border-black px-2 text-right font-medium">{CGST}</td>
+//                                         </tr>
+//                                     )}
+
+//                                     {(cgst || sgst) && (
+//                                         <tr className="border border-black h-10 bg-blue-100">
+//                                             <td colSpan={3}></td>
+//                                             <td className="px-2 text-blue-700 font-bold border border-black text-right text-base">Invoice Value</td>
+//                                             <td className="px-2 border border-black text-right font-extrabold text-base">{invoiceValue.toFixed(2)}</td>
+//                                         </tr>
+//                                     )}
+
+//                                     <tr className="border border-black h-10">
+//                                         <td colSpan={5} className="px-2">
+//                                             <span className="font-semibold">In Words: </span>
+//                                             <span className="italic">{numberToWords(invoiceValue > 0 ? invoiceValue : taxableValue)} Only.</span>
+//                                         </td>
+//                                     </tr>
+
+//                                     {/* Bank Details & Signature */}
+//                                     <tr>
+//                                         <td colSpan={5} className="p-2 border-t border-black text-xs">
+//                                             <div className="flex justify-between">
+//                                                 <div className="w-1/2">
+//                                                     <p className="font-semibold text-sm">BANK DETAILS:-</p>
+//                                                     <p>UNION BANK OF INDIA, MURALI NAGAR, VISAKHAPATNAM</p>
+//                                                     <p><span className="font-semibold">A/C NUMBER-</span> 753601010050187; <span className="font-semibold">IFSC:</span> UBIN0810746</p>
+//                                                     <p><span className="font-semibold">UPI ID:</span> designblocks@ybl</p>
+//                                                 </div>
+//                                                 <div className="w-1/2 text-right pt-6">
+//                                                     <p className="text-sm">For <span className="uppercase font-bold mr-10">Design Blocks</span></p>
+//                                                     <p className="mt-6 text-gray-500">(Authorized Signatory)</p>
+//                                                 </div>
+//                                             </div>
+//                                             <div className="text-center mt-3 font-semibold">Thank You</div>
+//                                         </td>
+//                                     </tr>
+
+//                                     {quotation && (
+//                                         <tr>
+//                                             <td colSpan={5} className="p-2 border border-black bg-yellow-50 text-xs">
+//                                                 <div className="text-sm">
+//                                                     <p className="font-semibold mb-1">Terms and Conditions.</p>
+//                                                     <p>Quotation prices are valid for 20 days from the date of issue.</p>
+//                                                     <p>Any increase in project scope will result in an additional cost.</p>
+//                                                 </div>
+//                                             </td>
+//                                         </tr>
+//                                     )}
+//                                 </tbody>
+//                             </table>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// }
+
+// export default App;
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { 
-    User, 
-    Lock, 
-    LogOut, 
-    FileText, 
-    Receipt, 
-    Trash2, 
-    Edit, 
-    AlertTriangle, 
-    CheckCircle, 
-    X, 
+import AdminPanel from "./AdminPanel";
+import {
+    User,
+    Lock,
+    LogOut,
+    AlertTriangle,
+    CheckCircle,
+    X,
     Loader,
-    PlusSquare,
-    Home,
-    ClipboardList
 } from 'lucide-react';
-import AdminPanel from "./AdminPanel"; // Assuming AdminPanel.jsx exists
-import ReactToPrint from "react-to-print"; 
+// Removed: import AdminPanel from "./AdminPanel"; 
+// Removed: import ReactToPrint from "react-to-print"; 
 
 // --- CONFIGURATION ---
 const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
@@ -5451,7 +6471,7 @@ const Modal = ({ state, onClose, onConfirm }) => {
 function App() {
     // --- AUTHENTICATION STATE ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [userRole, setUserRole] = useState(""); 
+    const [userRole, setUserRole] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [authLoading, setAuthLoading] = useState(false);
@@ -5498,6 +6518,7 @@ function App() {
     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
     const [isItemEditing, setIsItemEditing] = useState(false);
     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
+    
 
     const [billDetails, setBillDetails] = useState({
         billTO: "",
@@ -5505,6 +6526,7 @@ function App() {
         customerGSTIN: "",
         quotationNumber: "",
         associatedQuotationNumber: "",
+        documentDate: new Date().toISOString().split("T")[0],
         items: [],
     });
 
@@ -5517,39 +6539,39 @@ function App() {
 
     // --- Invoice Generator Handlers ---
 
- const generateUniqueNumber = useCallback(async () => {
-    const token = localStorage.getItem('adminToken');   // 🔑 get token
-    if (!token) {
-        console.error("No token found. Cannot generate number.");
-        return;
-    }
-
-    try {
-        const url = quotation
-            ? `${BASE_URL}/api/quotation/generate`
-            : `${BASE_URL}/api/invoice/generate`;
-
-        const response = await fetch(url, {
-            headers: {
-                "Authorization": `Bearer ${token}`,      // ✅ attach token
-                "Content-Type": "application/json"
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            setBillDetails(prev => ({
-                ...prev,
-                quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
-            }));
-        } else {
-            console.error("Number generation failed:", data.error || data.message);
+    const generateUniqueNumber = useCallback(async () => {
+        const token = localStorage.getItem('adminToken');   // 🔑 get token
+        if (!token) {
+            console.error("No token found. Cannot generate number.");
+            return;
         }
-    } catch (error) {
-        console.error("Number generation failed", error);
-    }
-}, [quotation]);
+
+        try {
+            const url = quotation
+                ? `${BASE_URL}/api/quotation/generate`
+                : `${BASE_URL}/api/invoice/generate`;
+
+            const response = await fetch(url, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,      // ✅ attach token
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setBillDetails(prev => ({
+                    ...prev,
+                    quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
+                }));
+            } else {
+                console.error("Number generation failed:", data.error || data.message);
+            }
+        } catch (error) {
+            console.error("Number generation failed", error);
+        }
+    }, [quotation]);
 
 
     const handleAddItem = (e) => {
@@ -5558,7 +6580,7 @@ function App() {
         setEditingItemOriginal(null);
         setBillDetails({
             ...billDetails,
-            items: [...billDetails.items, { ...tableItems, quantity: Number(tableItems.quantity), unitPrice: Number(tableItems.unitPrice), id: Date.now() }], 
+            items: [...billDetails.items, { ...tableItems, quantity: Number(tableItems.quantity), unitPrice: Number(tableItems.unitPrice), id: Date.now() }],
         });
         setTableItems({ description: "", quantity: "", unitPrice: "" });
     };
@@ -5576,11 +6598,12 @@ function App() {
     const handleUpdateItem = (e) => {
         e.preventDefault();
         if (!editingItemOriginal) return;
+        // Use object reference for finding index as per the original component style
         const index = billDetails.items.findIndex(item => item === editingItemOriginal);
         if (index > -1) {
             const updatedItems = [...billDetails.items];
             updatedItems[index] = {
-                ...updatedItems[index], 
+                ...updatedItems[index],
                 description: tableItems.description,
                 quantity: Number(tableItems.quantity),
                 unitPrice: Number(tableItems.unitPrice)
@@ -5592,23 +6615,25 @@ function App() {
         setEditingItemOriginal(null);
     };
 
-    const handleItem = (item) => {
-        let removedArray = billDetails.items.filter(e => e !== item);
+    const handleItem = (itemToDelete) => {
+        let removedArray = billDetails.items.filter(e => e !== itemToDelete);
         setBillDetails({ ...billDetails, items: removedArray });
     };
 
     const handleUpdate = async () => {
-        const token = localStorage.getItem('adminToken'); 
+        const token = localStorage.getItem('adminToken');
         if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
 
         try {
             setLoading(true);
             const documentNumber = billDetails.quotationNumber;
+            const docKey = invoice ? "invoiceNumber" : "quotationNumber";
+            const valueKey = invoice ? "invoiceValue" : "quotationValue"; // Dynamic key for value
             const urlPath = invoice ? "invoice/update" : "quotation/update";
             const url = `${BASE_URL}/api/${urlPath}`;
 
             const body = {
-                [invoice ? "invoiceNumber" : "quotationNumber"]: documentNumber,
+                [docKey]: documentNumber,
                 billTO: billDetails.billTO,
                 customerAddress: billDetails.customerAddress,
                 customerGSTIN: billDetails.customerGSTIN,
@@ -5618,15 +6643,16 @@ function App() {
                 taxableValue: taxableValue,
                 SGSTAmount: SGST,
                 CGSTAmount: CGST,
-                invoiceValue: invoiceValue,
+                [valueKey]: invoiceValue, // Use dynamic key to send as quotationValue if needed
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+                documentDate: billDetails.documentDate,
             };
 
             const res = await fetch(url, {
-                method: "PUT", 
-                headers: { 
+                method: "PUT",
+                headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` 
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(body)
             });
@@ -5651,80 +6677,94 @@ function App() {
         else handleSave();
     };
 
-    const handleSave = async () => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
+const handleSave = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) { 
+        showNotification("Authentication token missing. Cannot save.", 'error'); 
+        return; 
+    }
 
-        try {
-            setLoading(true);
+    try {
+        setLoading(true);
 
-            const body = {
-                billTO: billDetails.billTO,
-                customerAddress: billDetails.customerAddress,
-                customerGSTIN: billDetails.customerGSTIN,
-                items: billDetails.items,
-                sgst: sgst,
-                cgst: cgst,
-                taxableValue: taxableValue,
-                SGSTAmount: SGST,
-                CGSTAmount: CGST,
-                invoiceValue: invoiceValue,
-                invoiceNumber: billDetails.quotationNumber,
-                originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
-            };
+        const docKey = quotation ? "quotationNumber" : "invoiceNumber";
+        const valueKey = quotation ? "quotationValue" : "invoiceValue";
 
-            const finalBody = quotation ? { ...body, quotationNumber: body.invoiceNumber } : body;
-            delete finalBody.invoiceNumber;
+        // ✅ Ensure documentDate is always valid before sending
+        const safeDocumentDate = billDetails.documentDate 
+            ? billDetails.documentDate 
+            : new Date().toISOString().split("T")[0];
 
-            const url = quotation
-                ? `${BASE_URL}/api/quotation/save`
-                : `${BASE_URL}/api/invoice/save`;
+        const body = {
+            billTO: billDetails.billTO,
+            customerAddress: billDetails.customerAddress,
+            customerGSTIN: billDetails.customerGSTIN,
+            items: billDetails.items,
+            sgst,
+            cgst,
+            taxableValue,
+            SGSTAmount: SGST,
+            CGSTAmount: CGST,
+            [valueKey]: invoiceValue,
+            [docKey]: billDetails.quotationNumber,
+            originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+            // documentDate: safeDocumentDate,
+            documentDate: billDetails.documentDate || new Date().toISOString().split("T")[0],
+        };
 
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` 
-                },
-                body: JSON.stringify(finalBody)
-            });
+        console.log("📤 Sending payload:", body); // Debug log
 
-            const data = await res.json();
+        const url = quotation
+            ?  `http://localhost:5000/api/quotation/save`
+            : `${BASE_URL}/api/invoice/save`;
 
-            if (data.success) {
-                const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
-                showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
-                setIsEditing(true);
-                setBillDetails(prev => ({
-                    ...prev,
-                    quotationNumber: savedNumber,
-                }));
-            } else {
-                showNotification(`Save Error: ${data.error}`, 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            showNotification("Unexpected error during save.", 'error');
-        } finally {
-            setLoading(false);
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
+            showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
+            setIsEditing(true);
+            setBillDetails(prev => ({
+                ...prev,
+                quotationNumber: savedNumber,
+                documentDate: safeDocumentDate // ✅ Keep it in state too
+            }));
+        } else {
+            showNotification(`Save Error: ${data.error}`, 'error');
         }
-    };
+    } catch (err) {
+        console.error(err);
+        showNotification("Unexpected error during save.", 'error');
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     const performActualDelete = async () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
-        const token = localStorage.getItem('adminToken'); 
-        
+        const token = localStorage.getItem('adminToken');
+
         try {
             setLoading(true);
             const urlPath = invoice ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
             const url = `${BASE_URL}/api/${urlPath}`;
 
-            const response = await fetch(url, { 
+            const response = await fetch(url, {
                 method: "DELETE",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` 
+                    "Authorization": `Bearer ${token}`
                 },
             });
             const data = await response.json();
@@ -5734,11 +6774,12 @@ function App() {
                 setBillDetails(prev => ({
                     ...prev,
                     billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+                    documentDate: new Date().toISOString().split("T")[0],
                 }));
                 setSGST(false);
                 setCGST(false);
                 setIsEditing(false);
-                generateUniqueNumber(); 
+                generateUniqueNumber();
             } else {
                 showNotification(`Delete Error: ${data.message || data.error}`, 'error');
             }
@@ -5753,7 +6794,7 @@ function App() {
     const handleDelete = () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
-        
+
         if (!documentNumber || !isEditing) {
             showNotification(`Cannot delete. No existing ${docType} loaded.`, 'info');
             return;
@@ -5766,97 +6807,112 @@ function App() {
         );
     };
 
-const handleSearch = async (docNumber) => {
-    if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
-    if (!docNumber) {
-        showNotification("Please enter a document number to search.", 'info');
-        return;
-    }
-
-    try {
-        setLoading(true);
-        setIsEditing(false); 
-
-        const token = localStorage.getItem('adminToken');   // ✅ get token
-        if (!token) {
-            showNotification("Authentication token missing. Cannot search.", 'error');
+    const handleSearch = async (docNumber) => {
+        if (typeof docNumber === 'object' || !docNumber) docNumber = searchNumber;
+        if (!docNumber) {
+            showNotification("Please enter a document number to search.", 'info');
             return;
         }
 
-        // --- Try searching for quotation first ---
-        const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
-        let response = await fetch(quoteUrl, {
-            headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
-        });
-        let result = await response.json();
+        try {
+            setLoading(true);
+            setIsEditing(false);
 
-        if (response.ok && result.quotation) {
-            const quote = result.quotation;
-            setBillDetails(prev => ({
-                ...prev,
-                billTO: quote.billTO || "",
-                customerAddress: quote.customerAddress || "",
-                customerGSTIN: quote.customerGSTIN || "",
-                items: quote.items || [],
-                associatedQuotationNumber: docNumber, 
-            }));
-            setSGST(quote.sgst || false);
-            setCGST(quote.cgst || false);
-            setOriginalQuotationNumber(quote.quotationNumber);
-
-            if (invoice) {
-                setIsEditing(false);
-                setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber })); 
-                showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
-            } else {
-                setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
-                setIsEditing(true); 
-                showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
+            const token = localStorage.getItem('adminToken');   // ✅ get token
+            if (!token) {
+                showNotification("Authentication token missing. Cannot search.", 'error');
+                return;
             }
-            return; 
-        }
-        
-        // --- If quotation not found, or if we are in invoice mode, try searching for invoice ---
-        if (invoice || !quotation) {
-            const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
-            response = await fetch(invoiceUrl, {
+
+            // --- Try searching for quotation first ---
+            const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
+            let response = await fetch(quoteUrl, {
                 headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
             });
-            result = await response.json();
+            let result = await response.json();
 
-            if (response.ok && result.invoice) {
-                const inv = result.invoice;
+            if (response.ok && result.quotation) {
+                const quote = result.quotation;
+
+                // --- FIX: Load saved date if available, otherwise fall back to initial date/today ---
+                const fetchedDate = quote.documentDate
+                    ? quote.documentDate
+                    : new Date().toISOString().split("T")[0];
+
                 setBillDetails(prev => ({
                     ...prev,
-                    billTO: inv.billTO || "",
-                    customerAddress: inv.customerAddress || "",
-                    customerGSTIN: inv.customerGSTIN || "",
-                    quotationNumber: inv.invoiceNumber,
-                    items: inv.items || [],
-                    associatedQuotationNumber: inv.originalQuotationNumber || '', 
+                    billTO: quote.billTO || "",
+                    customerAddress: quote.customerAddress || "",
+                    customerGSTIN: quote.customerGSTIN || "",
+                    items: quote.items || [],
+                    associatedQuotationNumber: docNumber,
+                    documentDate: quote.documentDate || new Date().toISOString().split("T")[0],
                 }));
-                setSGST(inv.sgst || false);
-                setCGST(inv.cgst || false);
-                setOriginalQuotationNumber(inv.originalQuotationNumber || null);
+                setSGST(quote.sgst || false);
+                setCGST(quote.cgst || false);
+                setOriginalQuotationNumber(quote.quotationNumber);
 
-                setIsEditing(true); 
-                showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
-                return; 
+                if (invoice) {
+                    setIsEditing(false);
+                    generateUniqueNumber(); // Generate a new invoice number
+                    setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber }));
+                    showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
+                } else {
+                    setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
+                    setIsEditing(true);
+                    showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
+                }
+                return;
             }
+
+            // --- If quotation not found, or if we are in invoice mode, try searching for invoice ---
+            if (invoice || !quotation) {
+                const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
+                response = await fetch(invoiceUrl, {
+                    headers: { "Authorization": `Bearer ${token}` }   // ✅ attach token
+                });
+                result = await response.json();
+
+                if (response.ok && result.invoice) {
+                    const inv = result.invoice;
+
+                    // --- FIX: Load saved date if available, otherwise fall back to initial date/today ---
+                    const fetchedDate = inv.documentDate
+                        ? inv.documentDate
+                        : new Date().toISOString().split("T")[0];
+
+                    setBillDetails(prev => ({
+                        ...prev,
+                        billTO: inv.billTO || "",
+                        customerAddress: inv.customerAddress || "",
+                        customerGSTIN: inv.customerGSTIN || "",
+                        quotationNumber: inv.invoiceNumber,
+                        items: inv.items || [],
+                        documentDate: fetchedDate, // Load date
+                        associatedQuotationNumber: inv.originalQuotationNumber || '',
+                    }));
+                    setSGST(inv.sgst || false);
+                    setCGST(inv.cgst || false);
+                    setOriginalQuotationNumber(inv.originalQuotationNumber || null);
+
+                    setIsEditing(true);
+                    showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
+                    return;
+                }
+            }
+
+            setIsEditing(false);
+            setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "", documentDate: new Date().toISOString().split("T")[0] })); // Reset date on not found
+            generateUniqueNumber();
+            showNotification(`Document #${docNumber} not found.`, 'error');
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            showNotification('Error fetching data. Check server connection.', 'error');
+        } finally {
+            setLoading(false);
         }
-
-        setIsEditing(false);
-        setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "" }));
-        generateUniqueNumber();
-        showNotification(`Document #${docNumber} not found.`, 'error');
-
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        showNotification('Error fetching data. Check server connection.', 'error');
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
 
     // --- END Invoice Generator Handlers ---
@@ -5877,15 +6933,15 @@ const handleSearch = async (docNumber) => {
             if (data.success) {
                 localStorage.setItem('adminToken', data.token);
                 localStorage.setItem('userRole', data.role);
-                
+
                 setIsAuthenticated(true);
-                setUserRole(data.role); 
+                setUserRole(data.role);
             } else {
-                showModal(data.error || "Invalid Credentials", 'ALERT'); 
+                showModal(data.error || "Invalid Credentials", 'ALERT');
             }
         } catch (error) {
             console.error("Login Error:", error);
-            showModal("Login failed. Check server connection.", 'ALERT'); 
+            showModal("Login failed. Check server connection.", 'ALERT');
         } finally {
             setAuthLoading(false);
         }
@@ -5909,7 +6965,7 @@ const handleSearch = async (docNumber) => {
         const role = localStorage.getItem('userRole');
         if (token) {
             setIsAuthenticated(true);
-            setUserRole(role || "employee"); 
+            setUserRole(role || "employee");
         }
     }, []);
 
@@ -5937,10 +6993,11 @@ const handleSearch = async (docNumber) => {
 
     // 3. Reset form on mode change
     useEffect(() => {
-         if (isAuthenticated && userRole === 'employee') {
+        if (isAuthenticated && userRole === 'employee') {
             setBillDetails(prev => ({
                 ...prev,
                 billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+                documentDate: new Date().toISOString().split("T")[0], // Reset date
             }));
             setSGST(false);
             setCGST(false);
@@ -5948,8 +7005,8 @@ const handleSearch = async (docNumber) => {
             setInvoiceValue(0);
             setOriginalQuotationNumber(null);
             setSearchNumber("");
-            setIsEditing(false); 
-            setIsItemEditing(false); 
+            setIsEditing(false);
+            setIsItemEditing(false);
             setEditingItemOriginal(null);
 
             generateUniqueNumber();
@@ -5972,7 +7029,7 @@ const handleSearch = async (docNumber) => {
                         <h2 className="text-2xl font-bold text-gray-800">Design Blocks Login</h2>
                         <p className="text-gray-500 text-sm mt-2">Sign in to continue</p>
                     </div>
-                    
+
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
@@ -5980,8 +7037,8 @@ const handleSearch = async (docNumber) => {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <User className="text-gray-400" size={18} />
                                 </div>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     required
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
@@ -5997,8 +7054,8 @@ const handleSearch = async (docNumber) => {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock className="text-gray-400" size={18} />
                                 </div>
-                                <input 
-                                    type="password" 
+                                <input
+                                    type="password"
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -6008,8 +7065,8 @@ const handleSearch = async (docNumber) => {
                             </div>
                         </div>
 
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={authLoading}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         >
@@ -6027,8 +7084,8 @@ const handleSearch = async (docNumber) => {
     if (userRole === "admin") {
         return (
             <div className="min-h-screen w-full">
-                 <script src="https://cdn.tailwindcss.com"></script>
-                 <AdminPanel onLogout={handleLogout} />
+                <script src="https://cdn.tailwindcss.com"></script>
+                <AdminPanel onLogout={handleLogout} />
             </div>
         );
     }
@@ -6037,6 +7094,7 @@ const handleSearch = async (docNumber) => {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
+            {/* Tailwind CSS import (Included for HTML output consistency, though React usually assumes it's bundled) */}
             <script src="https://cdn.tailwindcss.com"></script>
 
             {/* Print-specific styles to hide UI elements when printing */}
@@ -6061,10 +7119,10 @@ const handleSearch = async (docNumber) => {
             </style>
 
             <div className="flex flex-col items-center justify-center gap-5 px-5 py-10 w-full relative">
-                
+
                 {/* Logout Button (Employee View) - hide-on-print */}
                 <div className="absolute top-5 right-5 hide-on-print">
-                    <button 
+                    <button
                         onClick={handleLogout}
                         className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors shadow-md"
                     >
@@ -6082,32 +7140,38 @@ const handleSearch = async (docNumber) => {
                             </p>
                             <p className="text-gray-500 text-sm">Employee Billing Portal</p>
                         </div>
-                            
+
                         {/* Search */}
                         <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
                             <p className="pb-3 text-xl font-semibold uppercase text-purple-600">Search Invoice/Quotation</p>
                             <div className="flex flex-col sm:flex-row items-stretch gap-3">
-                                <input type="text" placeholder="Enter Invoice/Quotation Number" className="outline-none rounded px-3 py-2 border border-purple-500 shadow-md w-full" value={searchNumber} onChange={(e) => setSearchNumber(e.target.value)} />
-                                <button 
-                                    onClick={() => handleSearch(searchNumber)} 
-                                    disabled={loading} 
+                                <input
+                                    type="text"
+                                    placeholder="Enter Invoice/Quotation Number"
+                                    className="outline-none rounded px-3 py-2 border border-purple-500 shadow-md w-full"
+                                    value={searchNumber}
+                                    onChange={(e) => setSearchNumber(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => handleSearch(searchNumber)}
+                                    disabled={loading}
                                     className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-purple-600 disabled:opacity-50"
                                 >
-                                    {loading ? 'Searching...' : 'Search'}
+                                    {loading ? <Loader size={20} className="animate-spin" /> : 'Search'}
                                 </button>
                             </div>
                         </div>
 
                         {/* Mode Switch */}
                         <div className="flex items-center justify-start gap-5 mb-5">
-                            <div 
-                                className={`cursor-pointer px-4 py-1 ${quotation ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+                            <div
+                                className={`cursor-pointer px-4 py-1 font-semibold transition-colors duration-200 ${quotation ? "bg-green-400 text-green-900 shadow-md" : "bg-transparent text-gray-700"} border-2 border-green-400 rounded-lg`}
                                 onClick={() => { setQuotation(true); setInvoice(false); }}
                             >
                                 Quotation
                             </div>
-                            <div 
-                                className={`cursor-pointer px-4 py-1 ${invoice ? "bg-green-400" : "bg-transparent"} border-2 border-green-400 rounded`} 
+                            <div
+                                className={`cursor-pointer px-4 py-1 font-semibold transition-colors duration-200 ${invoice ? "bg-green-400 text-green-900 shadow-md" : "bg-transparent text-gray-700"} border-2 border-green-400 rounded-lg`}
                                 onClick={() => { setQuotation(false); setInvoice(true); }}
                             >
                                 Invoice
@@ -6117,18 +7181,36 @@ const handleSearch = async (docNumber) => {
                         {/* Document Details */}
                         <div className="border-dashed border-2 border-slate-400 rounded-lg p-5 bg-gray-50">
                             <p className="pb-3 text-xl font-semibold uppercase text-blue-600">1. {invoice ? "Invoice" : "Quotation"} Details</p>
-                            <div className="flex items-center justify-start flex-wrap gap-3">
-                                <h1>{invoice ? "Invoice" : "Quotation"} Number</h1>
+                            <div className="flex flex-wrap items-center justify-start gap-3">
+                                <h1 className="font-medium text-gray-700">{invoice ? "Invoice" : "Quotation"} Number</h1>
                                 <input type="text" value={billDetails.quotationNumber} placeholder={`Auto-generated`} className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md bg-gray-100" readOnly />
+
+                                {/* Date Input */}
+                                <div className="flex items-center gap-3">
+                                    <h1 className="font-medium text-gray-700">Date</h1>
+                                    <input
+                                        type="date"
+                                        value={billDetails.documentDate}
+                                        onChange={(e) => setBillDetails({ ...billDetails, documentDate: e.target.value })}
+                                        className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md"
+                                    />
+                                </div>
+
                                 {invoice && (
-                                    <div className="flex items-center gap-3 mt-3">
-                                        <h1>Quotation Number</h1>
-                                        <div className="flex items-center border border-blue-500 rounded shadow-md">
-                                            <input type="text" value={billDetails.associatedQuotationNumber} placeholder={`Enter Q-Number to load`} className="outline-none rounded-l px-2 py-1 flex-1" onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })} />
-                                            <button 
-                                                onClick={() => handleSearch(billDetails.associatedQuotationNumber)} 
-                                                disabled={loading} 
-                                                className="bg-blue-500 text-white px-3 py-1 rounded-r h-full hover:bg-blue-600 disabled:opacity-50"
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <h1 className="font-medium text-gray-700">Quotation Number</h1>
+                                        <div className="flex items-center border border-blue-500 rounded-lg shadow-md">
+                                            <input
+                                                type="text"
+                                                value={billDetails.associatedQuotationNumber}
+                                                placeholder={`Enter Q-Number to load`}
+                                                className="outline-none rounded-l-lg px-2 py-1 flex-1"
+                                                onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })}
+                                            />
+                                            <button
+                                                onClick={() => handleSearch(billDetails.associatedQuotationNumber)}
+                                                disabled={loading}
+                                                className="bg-blue-500 text-white px-3 py-1 rounded-r-lg h-full hover:bg-blue-600 disabled:opacity-50"
                                             >
                                                 Load
                                             </button>
@@ -6141,61 +7223,136 @@ const handleSearch = async (docNumber) => {
                         {/* Recipient Details */}
                         <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50">
                             <p className="pb-3 text-xl font-semibold uppercase text-blue-600">2. Recipient Details</p>
-                            <div className="flex items-start justify-start flex-wrap gap-3">
-                                <div className="flex items-start justify-center flex-col gap-2"><h1>Bill TO</h1><input type="text" placeholder="Enter Biller Details" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.billTO} onChange={(e) => setBillDetails({ ...billDetails, billTO: e.target.value })} /></div>
-                                <div className="flex items-start justify-center flex-col gap-2"><h1>Address</h1><input type="text" placeholder="Enter Biller Address" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} /></div>
-                                <div className="flex items-start justify-center flex-col gap-2"><h1>Customer GSTIN</h1><input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} /></div>
+                            <div className="flex items-start justify-start flex-wrap gap-5">
+                                <div className="flex items-start justify-center flex-col gap-2">
+                                    <h1 className="font-medium text-gray-700">Bill TO</h1>
+                                    <input type="text" placeholder="Enter Biller Details" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.billTO} onChange={(e) => setBillDetails({ ...billDetails, billTO: e.target.value })} />
+                                </div>
+                                <div className="flex items-start justify-center flex-col gap-2">
+                                    <h1 className="font-medium text-gray-700">Address</h1>
+                                    <input type="text" placeholder="Enter Biller Address" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} />
+                                </div>
+                                <div className="flex items-start justify-center flex-col gap-2">
+                                    <h1 className="font-medium text-gray-700">Customer GSTIN</h1>
+                                    <input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} />
+                                </div>
                             </div>
                         </div>
 
                         {/* Items */}
                         <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50 w-full">
                             <form className="flex items-start justify-start flex-col" onSubmit={isItemEditing ? handleUpdateItem : handleAddItem}>
-                                <div className="flex flex-row items-center justify-between w-full pb-3"><p className="text-xl font-semibold uppercase text-blue-600">3. Items</p><div className="flex gap-3">{isItemEditing && (<button type="button" onClick={() => { setIsItemEditing(false); setEditingItemOriginal(null); setTableItems({ description: "", quantity: "", unitPrice: "" }); }} className="bg-yellow-500 px-3 py-2 rounded-md text-white shadow-md hover:bg-yellow-600">Cancel Edit</button>)}<button type="submit" className={`px-3 py-2 rounded-md text-green-950 shadow-md ${isItemEditing ? 'bg-orange-400 hover:bg-orange-500' : 'bg-green-400 hover:bg-green-500'}`}>{isItemEditing ? 'Update Item' : 'Add'}</button></div></div>
-                                <div className="flex items-center justify-start flex-wrap gap-3">
-                                    <div className="flex items-start justify-center flex-col gap-2"><h1>Description</h1><input type="text" required value={tableItems.description} placeholder="Enter Description" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, description: e.target.value })} /></div>
-                                    <div className="flex items-start justify-center flex-col gap-2"><h1>Quantity</h1><input type="number" required value={tableItems.quantity} placeholder="Enter Quantity" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, quantity: e.target.value })} /></div>
-                                    <div className="flex items-start justify-center flex-col gap-2"><h1>Unit Price</h1><input type="number" required value={tableItems.unitPrice} placeholder="Single Product Price" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, unitPrice: e.target.value })} /></div>
+                                <div className="flex flex-row items-center justify-between w-full pb-3">
+                                    <p className="text-xl font-semibold uppercase text-blue-600">3. Items</p>
+                                    <div className="flex gap-3">
+                                        {isItemEditing && (
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsItemEditing(false); setEditingItemOriginal(null); setTableItems({ description: "", quantity: "", unitPrice: "" }); }}
+                                                className="bg-yellow-500 px-3 py-2 rounded-md text-white shadow-md hover:bg-yellow-600 transition-colors"
+                                            >
+                                                Cancel Edit
+                                            </button>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className={`px-3 py-2 rounded-md text-white shadow-md transition-colors ${isItemEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                        >
+                                            {isItemEditing ? 'Update Item' : 'Add'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-start flex-wrap gap-5">
+                                    <div className="flex items-start justify-center flex-col gap-2">
+                                        <h1 className="font-medium text-gray-700">Description</h1>
+                                        <input type="text" required value={tableItems.description} placeholder="Enter Description" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, description: e.target.value })} />
+                                    </div>
+                                    <div className="flex items-start justify-center flex-col gap-2">
+                                        <h1 className="font-medium text-gray-700">Quantity</h1>
+                                        <input type="number" required value={tableItems.quantity} placeholder="Enter Quantity" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, quantity: e.target.value })} />
+                                    </div>
+                                    <div className="flex items-start justify-center flex-col gap-2">
+                                        <h1 className="font-medium text-gray-700">Unit Price</h1>
+                                        <input type="number" required value={tableItems.unitPrice} placeholder="Single Product Price" className="outline-none rounded px-2 py-1 border border-blue-500 shadow-md" onChange={(e) => setTableItems({ ...tableItems, unitPrice: e.target.value })} />
+                                    </div>
                                 </div>
                             </form>
                             {billDetails.items.length > 0 && (
-                                <div className="overflow-x-scroll w-full py-5"><div className="w-full min-w-[50rem]"><table className="w-full"><tbody className="w-full"><tr className="bg-gray-200 font-bold"><td className="border border-blue-500 px-3 py-2 w-[5%] text-center">#</td><td className="border border-blue-500 px-3 py-2 w-[45%]">Description</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-center">Qty</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Unit Price</td><td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Total Price</td><td className="px-3 w-[5%] text-center">Action</td></tr>{billDetails.items.map((item, index) => (<tr key={index} className="odd:bg-white even:bg-gray-100 cursor-pointer hover:bg-blue-100 transition duration-150" onClick={() => handleEditItem(item)}><td className="border border-blue-500 px-3 py-2 text-center">{index + 1}</td><td className="border border-blue-500 px-3 py-2">{item.description}</td><td className="border border-blue-500 px-3 py-2 text-center">{item.quantity}</td><td className="border border-blue-500 px-3 py-2 text-right">{Number(item.unitPrice).toFixed(2)}</td><td className="border border-blue-500 px-3 py-2 text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td><td className="px-3"><p className="bg-red-500 px-2 py-1 rounded-lg text-center cursor-pointer text-white text-xs inline-block" onClick={(e) => { e.stopPropagation(); handleItem(item); }}>Delete</p></td></tr>))}</tbody></table></div></div>
+                                <div className="overflow-x-scroll w-full py-5">
+                                    <div className="w-full min-w-[50rem]">
+                                        <table className="w-full">
+                                            <tbody className="w-full">
+                                                <tr className="bg-gray-200 font-bold">
+                                                    <td className="border border-blue-500 px-3 py-2 w-[5%] text-center">#</td>
+                                                    <td className="border border-blue-500 px-3 py-2 w-[45%]">Description</td>
+                                                    <td className="border border-blue-500 px-3 py-2 w-[15%] text-center">Qty</td>
+                                                    <td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Unit Price (Rs.)</td>
+                                                    <td className="border border-blue-500 px-3 py-2 w-[15%] text-right">Total Price (Rs.)</td>
+                                                    <td className="px-3 w-[5%] text-center">Action</td>
+                                                </tr>
+                                                {billDetails.items.map((item, index) => (
+                                                    <tr key={item.id} className="odd:bg-white even:bg-gray-100 cursor-pointer hover:bg-blue-100 transition duration-150" onClick={() => handleEditItem(item)}>
+                                                        <td className="border border-blue-500 px-3 py-2 text-center">{index + 1}</td>
+                                                        <td className="border border-blue-500 px-3 py-2">{item.description}</td>
+                                                        <td className="border border-blue-500 px-3 py-2 text-center">{item.quantity}</td>
+                                                        <td className="border border-blue-500 px-3 py-2 text-right">{Number(item.unitPrice).toFixed(2)}</td>
+                                                        <td className="border border-blue-500 px-3 py-2 text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td>
+                                                        <td className="px-3">
+                                                            <p className="bg-red-500 px-2 py-1 rounded-lg text-center cursor-pointer text-white text-xs inline-block hover:bg-red-600 transition" onClick={(e) => { e.stopPropagation(); handleItem(item); }}>
+                                                                Delete
+                                                            </p>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
                         {/* GST & Buttons */}
-                        <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50"><p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p><div className="flex items-center justify-start gap-5 mt-3"><label onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>SGST</label><label onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-400" : "bg-green-400"} px-5 py-1 rounded duration-300 cursor-pointer`}>CGST</label></div></div>
+                        <div className="border-dashed border-2 border-slate-400 rounded-lg my-7 p-5 bg-gray-50">
+                            <p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p>
+                            <div className="flex items-center justify-start gap-5 mt-3">
+                                <label onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-500 text-white" : "bg-green-500 text-white"} px-5 py-2 rounded-lg duration-300 cursor-pointer shadow-md font-semibold hover:opacity-80 transition-opacity`}>
+                                    SGST {sgst ? 'ON' : 'OFF'}
+                                </label>
+                                <label onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-500 text-white" : "bg-green-500 text-white"} px-5 py-2 rounded-lg duration-300 cursor-pointer shadow-md font-semibold hover:opacity-80 transition-opacity`}>
+                                    CGST {cgst ? 'ON' : 'OFF'}
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
                         <div className="flex gap-3">
-                            <button 
-                                onClick={handleSaveOrUpdate} 
-                                disabled={loading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress} 
-                                className="bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            <button
+                                onClick={handleSaveOrUpdate}
+                                disabled={loading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress}
+                                className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                {loading ? 'Processing...' : isEditing ? 'Update' : 'Save'}
+                                {loading ? <Loader size={20} className="animate-spin" /> : (isEditing ? 'Update' : 'Save')}
                             </button>
                             {isEditing && (
-                                <button 
-                                    onClick={handleDelete} 
-                                    disabled={loading} 
-                                    className="bg-red-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={loading}
+                                    className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    {loading ? 'Deleting...' : 'Delete'}
+                                    {loading ? <Loader size={20} className="animate-spin" /> : 'Delete'}
                                 </button>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* Print Button */}
-                <ReactToPrint
-                    trigger={() => (
-                        <button className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5 hide-on-print">
-                            Print Receipt
-                        </button>
-                    )}
-                    content={() => printRef.current}
-                    pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
-                />
+                {/* Print Button - Using window.print() */}
+                <button
+                    onClick={() => window.print()}
+                    className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5 hide-on-print"
+                >
+                    Print Receipt
+                </button>
 
                 {/* Hidden Print Area */}
                 <div className="w-full bg-white flex items-center justify-center">
@@ -6238,31 +7395,39 @@ const handleSearch = async (docNumber) => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex justify-between h-10 px-5 border-t border-black text-sm">
-                                        <p className="font-semibold text-lg">{invoice ? "Invoice" : "Quotation"} No: <span className="font-normal">{billDetails.quotationNumber}</span></p>
-                                        <p>Date: <span>{date.toLocaleDateString("en-GB")}</span></p>
+                                    <div className="flex flex-col">
+                                        <label className="font-semibold">Document Date</label>
+                                        <input
+                                            type="date"
+                                            value={billDetails.documentDate}
+                                            onChange={(e) =>
+                                                setBillDetails({ ...billDetails, documentDate: e.target.value })
+                                            }
+                                            className="border px-2 py-1 rounded"
+                                        />
                                     </div>
+
                                 </div>
                             </div>
 
                             <div className="h-10 w-full border-x border-black"></div>
 
                             {/* Items Table */}
-                            <table className="w-[60rem] text-sm">
+                            <table className="w-[60rem] text-sm table-fixed">
                                 <thead>
                                     <tr className="h-10 bg-gray-100 font-bold">
                                         <td className="border border-black text-center w-[5%]">Item</td>
-                                        <td className="border border-black text-center w-[30rem]">Description</td>
+                                        <td className="border border-black text-center w-[45%]">Description</td>
                                         <td className="border border-black text-center w-[10%]">Quantity</td>
-                                        <td className="border border-black text-center w-[15%]">Unit Price (Rs.)</td>
+                                        <td className="border border-black text-center w-[20%]">Unit Price (Rs.)</td>
                                         <td className="border border-black text-center w-[20%]">Total Price (Rs.)</td>
                                     </tr>
                                 </thead>
                                 <tbody className="border border-black">
                                     {billDetails.items.length > 0 ? billDetails.items.map((items, key) => (
-                                        <tr key={key} className="h-10">
+                                        <tr key={items.id} className="h-10">
                                             <td className="text-center border border-black">{key + 1}.</td>
-                                            <td className="px-2 border border-black">{items.description}</td>
+                                            <td className="px-2 border border-black whitespace-normal">{items.description}</td>
                                             <td className="px-2 border border-black text-center">{items.quantity}</td>
                                             <td className="px-2 border border-black text-right">{Number(items.unitPrice).toFixed(2)}</td>
                                             <td className="px-2 border border-black text-right">{(items.quantity * items.unitPrice).toFixed(2)}</td>
@@ -6272,6 +7437,7 @@ const handleSearch = async (docNumber) => {
                                             <td colSpan={5} className="text-center text-gray-500 border border-black">No items added.</td>
                                         </tr>
                                     )}
+
 
                                     {/* Totals */}
                                     <tr className="border border-black h-10 bg-yellow-50">
@@ -6295,13 +7461,14 @@ const handleSearch = async (docNumber) => {
                                         </tr>
                                     )}
 
-                                    {(cgst || sgst) && (
-                                        <tr className="border border-black h-10 bg-blue-100">
-                                            <td colSpan={3}></td>
-                                            <td className="px-2 text-blue-700 font-bold border border-black text-right text-base">Invoice Value</td>
-                                            <td className="px-2 border border-black text-right font-extrabold text-base">{invoiceValue.toFixed(2)}</td>
-                                        </tr>
-                                    )}
+                                    {/* Grand Total Row */}
+                                    <tr className="border border-black h-10 bg-blue-100">
+                                        <td colSpan={3}></td>
+                                        <td className="px-2 text-blue-700 font-bold border border-black text-right text-base">
+                                            {invoice ? "Invoice Value" : "Quotation Value"}
+                                        </td>
+                                        <td className="px-2 border border-black text-right font-extrabold text-base">{invoiceValue.toFixed(2)}</td>
+                                    </tr>
 
                                     <tr className="border border-black h-10">
                                         <td colSpan={5} className="px-2">
@@ -6317,15 +7484,22 @@ const handleSearch = async (docNumber) => {
                                                 <div className="w-1/2">
                                                     <p className="font-semibold text-sm">BANK DETAILS:-</p>
                                                     <p>UNION BANK OF INDIA, MURALI NAGAR, VISAKHAPATNAM</p>
-                                                    <p><span className="font-semibold">A/C NUMBER-</span> 753601010050187; <span className="font-semibold">IFSC:</span> UBIN0810746</p>
-                                                    <p><span className="font-semibold">UPI ID:</span> designblocks@ybl</p>
+                                                    <p>
+                                                        <span className="font-semibold">A/C NUMBER-</span> 753601010050187;
+                                                        <span className="font-semibold"> IFSC:</span> UBIN0810746
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-semibold">UPI ID:</span> designblocks@ybl
+                                                    </p>
                                                 </div>
                                                 <div className="w-1/2 text-right pt-6">
-                                                    <p className="text-sm">For <span className="uppercase font-bold mr-10">Design Blocks</span></p>
+                                                    <p className="text-sm">
+                                                        For <span className="uppercase font-bold mr-10">Design Blocks</span>
+                                                    </p>
                                                     <p className="mt-6 text-gray-500">(Authorized Signatory)</p>
                                                 </div>
                                             </div>
-                                            <div className="text-center mt-3 font-semibold">Thank You</div>
+                                            <div className="text-center mt-3 font-semibold text-sm">Thank You</div>
                                         </td>
                                     </tr>
 
@@ -6333,7 +7507,7 @@ const handleSearch = async (docNumber) => {
                                         <tr>
                                             <td colSpan={5} className="p-2 border border-black bg-yellow-50 text-xs">
                                                 <div className="text-sm">
-                                                    <p className="font-semibold mb-1">Terms and Conditions.</p>
+                                                    <p className="font-semibold mb-1">Terms & Conditions</p>
                                                     <p>Quotation prices are valid for 20 days from the date of issue.</p>
                                                     <p>Any increase in project scope will result in an additional cost.</p>
                                                 </div>

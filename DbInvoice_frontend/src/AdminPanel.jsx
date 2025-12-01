@@ -2244,7 +2244,7 @@ import ReactToPrint from "react-to-print";
 // --- CONFIGURATION ---
 const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
-// --- Utility: Number to Words Converter ---
+// --- Utility: Number to Words Converter (Keep the original utility) ---
 const numberToWords = (num) => {
     if (num === 0) return 'Zero';
     const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -2287,7 +2287,7 @@ const numberToWords = (num) => {
 };
 
 
-// --- Component: Modal (Custom Alert/Confirm) ---
+// --- Component: Modal (Custom Alert/Confirm) - Keep the original Modal ---
 const Modal = ({ state, onClose, onConfirm }) => {
     if (!state.isVisible) return null;
 
@@ -2342,7 +2342,7 @@ const Modal = ({ state, onClose, onConfirm }) => {
 
 // --- Component: AdminPanel ---
 function AdminPanel({ onLogout }) {
-    // --- Admin Dashboard State ---
+    // --- Admin Dashboard State (Keep Original) ---
     const [activeTab, setActiveTab] = useState('dashboard');
     const [invoices, setInvoices] = useState([]);
     const [quotations, setQuotations] = useState([]);
@@ -2351,7 +2351,7 @@ function AdminPanel({ onLogout }) {
     const [editItem, setEditItem] = useState(null);
     const [editValue, setEditValue] = useState('');
     
-    // --- Billing Form State ---
+    // --- Billing Form State (Updated with App.jsx variables/defaults) ---
     const date = new Date();
     const printRef = useRef(null);
     const [quotation, setQuotation] = useState(true);
@@ -2363,7 +2363,7 @@ function AdminPanel({ onLogout }) {
     const [SGSTAmount, setSGSTAmount] = useState(0); 
     const [CGSTAmount, setCGSTAmount] = useState(0); 
     const [searchNumber, setSearchNumber] = useState("");
-    const [formLoading, setFormLoading] = useState(false); 
+    const [formLoading, setFormLoading] = useState(false); // Renamed from 'loading' in App.jsx
     const [isEditing, setIsEditing] = useState(false);
     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
     const [isItemEditing, setIsItemEditing] = useState(false);
@@ -2377,6 +2377,7 @@ function AdminPanel({ onLogout }) {
         quotationNumber: "",
         associatedQuotationNumber: "",
         items: [],
+        documentDate: new Date().toISOString().split("T")[0], // Added from App.jsx
     });
 
     const [tableItems, setTableItems] = useState({
@@ -2385,7 +2386,7 @@ function AdminPanel({ onLogout }) {
         unitPrice: "",
     });
 
-    // --- Change Password State ---
+    // --- Change Password State (Keep Original) ---
     const [passwordForm, setPasswordForm] = useState({
         oldPassword: '',
         newPassword: '',
@@ -2393,7 +2394,7 @@ function AdminPanel({ onLogout }) {
     });
     const [passwordLoading, setPasswordLoading] = useState(false);
 
-    // --- Modal State (Custom Alert/Confirm) ---
+    // --- Modal State (Custom Alert/Confirm) - Keep Original ---
     const [modalState, setModalState] = useState({
         isVisible: false,
         message: '',
@@ -2419,20 +2420,15 @@ function AdminPanel({ onLogout }) {
     };
     
     // ----------------------------------------------------
-    // --- 1. Data Fetching Logic (Admin Dashboard & Lists) ---
+    // --- 1. Data Fetching Logic (Admin Dashboard & Lists) - Keep Original ---
     // ----------------------------------------------------
     const fetchAdminData = useCallback(async (token) => {
         setDashboardLoading(true);
         setDashboardError('');
         try {
-            // NOTE: Assuming backend routes are protected and defined under /api/admin/invoices and /api/admin/quotations
-            // If they are under /api/invoices and /api/quotations, adjust the URL below.
-            
-            // ❌ Original code was calling fetch without authorization header for invoices/quotations lists, now fixed.
             const headers = { Authorization: `Bearer ${token}` };
 
             const [invoicesResponse, quotationsResponse] = await Promise.all([
-                // Assuming you set up /api/admin/invoices route in your backend
                 fetch(`${BASE_URL}/api/admin/invoices`, { headers }), 
                 fetch(`${BASE_URL}/api/admin/quotations`, { headers }) 
             ]);
@@ -2460,7 +2456,7 @@ function AdminPanel({ onLogout }) {
         }
     }, []);
 
-    // Initial Data Fetch Effect
+    // Initial Data Fetch Effect (Keep Original)
     useEffect(() => {
         const token = localStorage.getItem('adminToken');
         if (token) {
@@ -2474,22 +2470,19 @@ function AdminPanel({ onLogout }) {
 
 
     // ----------------------------------------------------
-    // --- 2. Billing Form Logic (Number Generation Fix) ---
+    // --- 2. Billing Form Logic (REPLACED/UPDATED with App.jsx Logic) ---
     // ----------------------------------------------------
 
-    // Generate unique invoice/quotation number
+    // Generate unique invoice/quotation number (FROM App.jsx)
     const generateUniqueNumber = useCallback(async () => {
-        // Form Loading should only be set for search/save actions, not auto-generation unless explicitly required
-        const token = localStorage.getItem('adminToken');
-        if (!token) { return; } // Cannot generate number without login
+        const token = localStorage.getItem('adminToken'); 
+        if (!token) { return; }
 
         try {
             const url = quotation
                 ? `${BASE_URL}/api/quotation/generate`
                 : `${BASE_URL}/api/invoice/generate`;
             
-            // NOTE: Assuming your backend allows GET /generate endpoints to be protected by verifyToken.
-            // If the route is protected, we must pass the token.
             const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
             const data = await response.json();
 
@@ -2499,21 +2492,22 @@ function AdminPanel({ onLogout }) {
                     quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
                 }));
             } else {
-                 showNotification(`Number generation failed: ${data.error || 'API Error'}`, 'error');
+                showNotification(`Number generation failed: ${data.error || 'API Error'}`, 'error');
             }
         } catch (error) {
             console.error("Number generation failed", error);
         }
     }, [quotation]);
 
-    // ** FIX: Effect to reset form state and trigger number generation only once on mode/tab change **
+    // ** Effect to reset form state and trigger number generation (COMBINED/UPDATED with App.jsx logic) **
     useEffect(() => {
         if (activeTab === 'newBill') {
-            // 1. Reset all local states
+            // 1. Reset all local states (based on App.jsx reset)
             setBillDetails(prev => ({
                 ...prev,
                 billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
-                quotationNumber: "" // Clear number to signal regeneration
+                quotationNumber: "", // Clear number to signal regeneration
+                documentDate: new Date().toISOString().split("T")[0], // Reset date
             }));
             setSGST(false);
             setCGST(false);
@@ -2528,14 +2522,10 @@ function AdminPanel({ onLogout }) {
             // 2. Generate a new number (will run whenever activeTab, quotation, or invoice changes)
             generateUniqueNumber();
         }
-    // IMPORTANT: Removed generateUniqueNumber from dependency array to prevent infinite loop.
-    // However, since it is wrapped in useCallback and 'quotation' is its only dependency, 
-    // it's safe to keep it, but removing it here ensures minimal runs when other states change.
-    // We will keep it removed for robustness.
-    }, [activeTab, quotation, invoice]); 
+    }, [activeTab, quotation, invoice, generateUniqueNumber]); 
 
 
-    // Calculation effect (Remains Correct)
+    // Calculation effect (Kept original logic, adjusted variable names)
     useEffect(() => {
         if (activeTab === 'newBill') {
             const newTaxableValue = billDetails.items.reduce((acc, item) => {
@@ -2558,12 +2548,13 @@ function AdminPanel({ onLogout }) {
     }, [billDetails.items, cgst, sgst, activeTab]);
 
 
-    // Handles adding/updating item in the form (Remains Correct)
+    // Handles adding/updating item in the form (FROM App.jsx)
     const handleAddItem = (e) => {
         e.preventDefault();
         setIsItemEditing(false);
         setEditingItemOriginal(null);
-
+        
+        // Add unique ID for better list tracking
         setBillDetails({
             ...billDetails,
             items: [...billDetails.items, { ...tableItems, quantity: Number(tableItems.quantity), unitPrice: Number(tableItems.unitPrice), id: Date.now() }],
@@ -2586,6 +2577,7 @@ function AdminPanel({ onLogout }) {
 
         if (!editingItemOriginal) return;
 
+        // Use object reference for finding index as per the original component style
         const index = billDetails.items.findIndex(item => item === editingItemOriginal);
 
         if (index > -1) {
@@ -2605,13 +2597,13 @@ function AdminPanel({ onLogout }) {
         setEditingItemOriginal(null);
     };
 
-    const handleItem = (item) => {
-        let removedArray = billDetails.items.filter(e => e !== item);
+    const handleItem = (itemToDelete) => {
+        let removedArray = billDetails.items.filter(e => e !== itemToDelete);
         setBillDetails({ ...billDetails, items: removedArray });
     };
 
-    // Handle Update Logic (Remains Correct - Auth Header is present)
-    const handleUpdateForm = async () => {
+    // Handle Update Logic (FROM App.jsx - renamed to handleUpdate)
+    const handleUpdate = async () => {
         const token = localStorage.getItem('adminToken');
         if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
 
@@ -2619,11 +2611,13 @@ function AdminPanel({ onLogout }) {
             setFormLoading(true);
 
             const documentNumber = billDetails.quotationNumber;
+            const docKey = invoice ? "invoiceNumber" : "quotationNumber";
+            const valueKey = invoice ? "invoiceValue" : "quotationValue"; 
             const urlPath = invoice ? "invoice/update" : "quotation/update";
             const url = `${BASE_URL}/api/${urlPath}`;
 
             const body = {
-                [invoice ? "invoiceNumber" : "quotationNumber"]: documentNumber,
+                [docKey]: documentNumber,
                 billTO: billDetails.billTO,
                 customerAddress: billDetails.customerAddress,
                 customerGSTIN: billDetails.customerGSTIN,
@@ -2633,8 +2627,9 @@ function AdminPanel({ onLogout }) {
                 taxableValue: taxableValue,
                 SGSTAmount: SGSTAmount,
                 CGSTAmount: CGSTAmount,
-                invoiceValue: invoiceValue,
+                [valueKey]: invoiceValue, 
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+                documentDate: billDetails.documentDate,
             };
 
             const res = await fetch(url, {
@@ -2659,40 +2654,54 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // Save/Update Handler (Remains Correct)
+    // Save/Update Handler (Keep Original Structure, calls updated functions)
     const handleSaveOrUpdate = () => {
         if (isEditing) {
-            handleUpdateForm();
+            handleUpdate();
         } else {
-            handleSaveForm();
+            handleSave();
         }
     };
 
-    // Save invoice/quotation to backend (Remains Correct - Auth Header is present)
-    const handleSaveForm = async () => {
+    // Save invoice/quotation to backend (FROM App.jsx)
+    const handleSave = async () => {
         const token = localStorage.getItem('adminToken');
         if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
 
         try {
             setFormLoading(true);
 
+            const docKey = quotation ? "quotationNumber" : "invoiceNumber";
+            const valueKey = quotation ? "quotationValue" : "invoiceValue";
+            const safeDocumentDate = billDetails.documentDate 
+                ? billDetails.documentDate 
+                : new Date().toISOString().split("T")[0];
+
             const body = {
                 billTO: billDetails.billTO,
                 customerAddress: billDetails.customerAddress,
                 customerGSTIN: billDetails.customerGSTIN,
                 items: billDetails.items,
-                sgst: sgst,
-                cgst: cgst,
-                taxableValue: taxableValue,
-                SGSTAmount: SGSTAmount,
-                CGSTAmount: CGSTAmount,
-                invoiceValue: invoiceValue,
-                invoiceNumber: billDetails.quotationNumber,
+                sgst,
+                cgst,
+                taxableValue,
+                SGSTAmount,
+                CGSTAmount,
+                [valueKey]: invoiceValue,
+                [docKey]: billDetails.quotationNumber,
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+                documentDate: safeDocumentDate,
             };
 
-            const finalBody = quotation ? { ...body, quotationNumber: body.invoiceNumber } : body;
-            delete finalBody.invoiceNumber;
+            // Backend expects just 'quotationNumber' or 'invoiceNumber' at the top level
+            const finalBody = {
+                ...body,
+                [docKey]: body[docKey]
+            };
+            
+            // Remove the conflicting key if it exists
+            if (quotation) { delete finalBody.invoiceNumber; } else { delete finalBody.quotationNumber; }
+
 
             const url = quotation
                 ? `${BASE_URL}/api/quotation/save`
@@ -2710,7 +2719,11 @@ function AdminPanel({ onLogout }) {
                 const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
                 showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
                 setIsEditing(true);
-                setBillDetails(prev => ({ ...prev, quotationNumber: savedNumber, }));
+                setBillDetails(prev => ({ 
+                    ...prev, 
+                    quotationNumber: savedNumber,
+                    documentDate: safeDocumentDate 
+                }));
                 fetchAdminData(token); 
             } else {
                 showNotification(`Save Error: ${data.error}`, 'error');
@@ -2723,7 +2736,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // Handle Delete Logic (Remains Correct - Auth Header is present)
+    // Handle Delete Logic (FROM App.jsx - renamed functions)
     const performActualDeleteForm = async () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
@@ -2742,6 +2755,7 @@ function AdminPanel({ onLogout }) {
                 setBillDetails(prev => ({
                     ...prev,
                     billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
+                    documentDate: new Date().toISOString().split("T")[0],
                 }));
                 setSGST(false);
                 setCGST(false);
@@ -2775,7 +2789,7 @@ function AdminPanel({ onLogout }) {
     };
 
 
-    // Fetch invoice/quotation by number (Remains Correct - Auth Header is present)
+    // Fetch invoice/quotation by number (FROM App.jsx)
     const handleSearch = async (docNumber) => {
         if (typeof docNumber === 'object' || !docNumber) {
             docNumber = searchNumber;
@@ -2799,6 +2813,10 @@ function AdminPanel({ onLogout }) {
             if (response.ok && result.quotation) {
                 const quote = result.quotation;
 
+                const fetchedDate = quote.documentDate
+                    ? quote.documentDate
+                    : new Date().toISOString().split("T")[0];
+
                 setBillDetails(prev => ({
                     ...prev,
                     billTO: quote.billTO || "",
@@ -2806,6 +2824,7 @@ function AdminPanel({ onLogout }) {
                     customerGSTIN: quote.customerGSTIN || "",
                     items: quote.items || [],
                     associatedQuotationNumber: docNumber,
+                    documentDate: fetchedDate,
                 }));
                 setSGST(quote.sgst || false);
                 setCGST(quote.cgst || false);
@@ -2813,6 +2832,7 @@ function AdminPanel({ onLogout }) {
 
                 if (invoice) {
                     setIsEditing(false);
+                    generateUniqueNumber(); // Generate a new invoice number
                     setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber }));
                     showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
                 } else {
@@ -2831,6 +2851,11 @@ function AdminPanel({ onLogout }) {
 
                 if (response.ok && result.invoice) {
                     const inv = result.invoice;
+                    
+                    const fetchedDate = inv.documentDate
+                        ? inv.documentDate
+                        : new Date().toISOString().split("T")[0];
+
                     setBillDetails(prev => ({
                         ...prev,
                         billTO: inv.billTO || "",
@@ -2838,6 +2863,7 @@ function AdminPanel({ onLogout }) {
                         customerGSTIN: inv.customerGSTIN || "",
                         quotationNumber: inv.invoiceNumber,
                         items: inv.items || [],
+                        documentDate: fetchedDate,
                         associatedQuotationNumber: inv.originalQuotationNumber || '',
                     }));
                     setSGST(inv.sgst || false);
@@ -2852,7 +2878,7 @@ function AdminPanel({ onLogout }) {
 
             // If not found
             setIsEditing(false);
-            setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "" }));
+            setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "", documentDate: new Date().toISOString().split("T")[0] }));
             generateUniqueNumber();
             showNotification(`Document #${docNumber} not found.`, 'error');
 
@@ -2867,12 +2893,11 @@ function AdminPanel({ onLogout }) {
     // --- END Billing Form Logic ---
     // ----------------------------------------------------
 
-    // --- Admin List Handlers (Auth Header is assumed to be present for Admin routes) ---
+    // --- Admin List Handlers (Keep Original) ---
 
     const performDeleteAdmin = async (type, number, token) => {
         setDashboardLoading(true);
         try {
-            // NOTE: Assuming delete endpoint is /api/admin/invoices/:number
             const response = await fetch(
                 `${BASE_URL}/api/admin/${type.toLowerCase()}s/${number}`,
                 {
@@ -2925,7 +2950,6 @@ function AdminPanel({ onLogout }) {
         setDashboardLoading(true);
 
         try {
-            // NOTE: Assuming update endpoint is /api/admin/invoices/:number
             const response = await fetch(
                 `${BASE_URL}/api/admin/${type}s/${number}`,
                 {
@@ -2955,7 +2979,7 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-    // --- NEW: Change Password Logic (Remains Correct - Auth Header is present) ---
+    // --- NEW: Change Password Logic (Keep Original) ---
     const handlePasswordChange = (e) => {
         setPasswordForm({
             ...passwordForm,
@@ -3012,12 +3036,13 @@ function AdminPanel({ onLogout }) {
             setPasswordLoading(false);
         }
     };
+    
     // ----------------------------------------------------
-    // --- Derived State & Render Helpers (No changes) ---
+    // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
     // ----------------------------------------------------
 
     const totalInvoiceValue = invoices.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
-    const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
+    const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.invoiceValue || 0), 0); // Assuming QuotationValue is sometimes saved as invoiceValue or should be changed
     const totalQuotationCount = quotations.length;
     const adminListData = activeTab === 'invoices' ? invoices : quotations;
 
@@ -3135,21 +3160,21 @@ function AdminPanel({ onLogout }) {
                                             {editItem &&
                                                 (editItem.invoiceNumber === item.invoiceNumber ||
                                                     editItem.quotationNumber === item.quotationNumber) ? (
-                                                    <input
-                                                        type="number"
-                                                        value={editValue}
-                                                        min="0"
-                                                        step="0.01"
-                                                        onChange={(e) => setEditValue(e.target.value)}
-                                                        className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 transition"
-                                                        placeholder="New Value"
-                                                    />
-                                                ) : (
-                                                    <span className="text-sm font-bold text-green-600">
-                                                        {/* Check which value field to display */}
-                                                        ₹{(item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue || 0).toFixed(2)}
-                                                    </span>
-                                                )}
+                                                        <input
+                                                            type="number"
+                                                            value={editValue}
+                                                            min="0"
+                                                            step="0.01"
+                                                            onChange={(e) => setEditValue(e.target.value)}
+                                                            className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 transition"
+                                                            placeholder="New Value"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-sm font-bold text-green-600">
+                                                            {/* Check which value field to display */}
+                                                            ₹{(item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue || 0).toFixed(2)}
+                                                        </span>
+                                                    )}
                                         </td>
                                         <td className="px-6 py-4 text-center whitespace-nowrap">
                                             <span className="text-xs text-gray-500">
@@ -3161,16 +3186,16 @@ function AdminPanel({ onLogout }) {
                                                 {editItem &&
                                                     (editItem.invoiceNumber === item.invoiceNumber ||
                                                         editItem.quotationNumber === item.quotationNumber) ? (
-                                                        <>
-                                                            <button onClick={saveEditAdmin} disabled={dashboardLoading} className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50">Save</button>
-                                                            <button onClick={() => { setEditItem(null); setEditValue(''); }} disabled={dashboardLoading} className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50">Cancel</button>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <button onClick={() => handleEditAdmin(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"><Edit size={14} /> Edit</button>
-                                                            <button onClick={() => handleDeleteAdmin(type === 'invoices' ? 'invoice' : 'quotation', item.invoiceNumber || item.quotationNumber)} className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"><Trash2 size={14} /> Delete</button>
-                                                        </>
-                                                    )}
+                                                            <>
+                                                                <button onClick={saveEditAdmin} disabled={dashboardLoading} className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50">Save</button>
+                                                                <button onClick={() => { setEditItem(null); setEditValue(''); }} disabled={dashboardLoading} className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50">Cancel</button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <button onClick={() => handleEditAdmin(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"><Edit size={14} /> Edit</button>
+                                                                <button onClick={() => handleDeleteAdmin(type === 'invoices' ? 'invoice' : 'quotation', item.invoiceNumber || item.quotationNumber)} className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"><Trash2 size={14} /> Delete</button>
+                                                            </>
+                                                        )}
                                             </div>
                                         </td>
                                     </tr>
@@ -3246,13 +3271,14 @@ function AdminPanel({ onLogout }) {
         </div>
     );
     
+    // --- REPLACED: renderNewBillForm (FROM App.jsx UI) ---
     const renderNewBillForm = () => (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">📄 New Bill Creator</h2>
             <div className="w-full flex items-center justify-center">
                 <div className="font-sans w-full max-w-4xl"> 
                     {/* Search Section */}
-                    <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5">
+                    <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5 hide-on-print">
                         <p className="pb-3 text-xl font-semibold uppercase text-purple-600">
                             Search Quotation/Invoice
                         </p>
@@ -3275,7 +3301,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* Mode Switch */}
-                    <div className="flex items-center justify-start gap-5 mb-5 font-semibold text-lg">
+                    <div className="flex items-center justify-start gap-5 mb-5 font-semibold text-lg hide-on-print">
                         <button
                             className={`px-4 py-2 rounded-lg transition-colors ${quotation ? "bg-green-600 text-white shadow-md" : "bg-white text-green-700 border-2 border-green-600 hover:bg-green-50"}`}
                             onClick={() => { setQuotation(true); setInvoice(false); }}
@@ -3291,7 +3317,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* 1. Document Details Section */}
-                    <div className="border-dashed border-2 border-slate-400 rounded-xl p-5 bg-gray-50">
+                    <div className="border-dashed border-2 border-slate-400 rounded-xl p-5 bg-gray-50 hide-on-print">
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             1. {invoice ? "Invoice" : "Quotation"} Details
                         </p>
@@ -3303,6 +3329,13 @@ function AdminPanel({ onLogout }) {
                                 placeholder={`Auto-generated`}
                                 className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto" 
                                 readOnly
+                            />
+                             <h1 className="font-medium">Date:</h1>
+                            <input
+                                type="date"
+                                value={billDetails.documentDate}
+                                onChange={(e) => setBillDetails({ ...billDetails, documentDate: e.target.value })}
+                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full md:w-auto"
                             />
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
@@ -3331,7 +3364,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* 2. Recipient Details */}
-                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50">
+                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 hide-on-print">
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             2. Recipient Details
                         </p>
@@ -3343,7 +3376,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* 3. Items Section */}
-                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 w-full">
+                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 w-full hide-on-print">
                         <form className="flex items-start justify-start flex-col" onSubmit={isItemEditing ? handleUpdateItem : handleAddItem}>
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3"> 
                                 <p className="text-xl font-semibold uppercase text-blue-600 mb-2 sm:mb-0">3. Items</p>
@@ -3378,7 +3411,7 @@ function AdminPanel({ onLogout }) {
                                                 <td className="px-3 w-[5%] text-center">Action</td>
                                             </tr>
                                             {billDetails.items.map((item, index) => (
-                                                <tr key={index} className="odd:bg-white even:bg-gray-100 cursor-pointer hover:bg-blue-100 transition duration-150" onClick={() => handleEditItem(item)}>
+                                                <tr key={item.id} className="odd:bg-white even:bg-gray-100 cursor-pointer hover:bg-blue-100 transition duration-150" onClick={() => handleEditItem(item)}>
                                                     <td className="text-center border border-blue-500 px-3 py-2">{index + 1}</td>
                                                     <td className="px-2 border border-blue-500 py-2">{item.description}</td>
                                                     <td className="px-2 border border-blue-500 py-2 text-center">{item.quantity}</td>
@@ -3397,7 +3430,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* 4. GST Info */}
-                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50">
+                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 hide-on-print">
                         <p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p>
                         <div className="flex flex-wrap items-center justify-start gap-5 mt-3"> 
                             <button type="button" onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-600"} text-white px-5 py-2 rounded-lg duration-300 cursor-pointer font-medium shadow-md`}>SGST {sgst ? 'ON' : 'OFF'}</button>
@@ -3406,7 +3439,7 @@ function AdminPanel({ onLogout }) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3"> 
+                    <div className="flex flex-wrap gap-3 hide-on-print"> 
                         {/* Save/Update Button */}
                         <button
                             onClick={handleSaveOrUpdate}
@@ -3433,7 +3466,7 @@ function AdminPanel({ onLogout }) {
             {/* Print Trigger Button */}
             <ReactToPrint
                 trigger={() => (
-                    <div className='flex justify-center'>
+                    <div className='flex justify-center hide-on-print'>
                         <button className="text-white bg-red-600 font-medium px-6 py-2 rounded-lg mb-5 mt-5 shadow-lg hover:bg-red-700 transition">
                             Print Receipt
                         </button>
@@ -3444,7 +3477,7 @@ function AdminPanel({ onLogout }) {
                 pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
             />
 
-            {/* --- PDF/Print PREVIEW Area --- */}
+            {/* --- PDF/Print PREVIEW Area (Updated to use documentDate) --- */}
             <div className="w-full bg-white flex items-center justify-center p-2 sm:p-4">
                 <div className="w-full max-w-full xl:max-w-[60rem] border border-gray-300 shadow-xl overflow-x-auto">
                     <div ref={printRef} className="flex flex-col min-w-[50rem] xl:w-[60rem] bg-white text-black printable-content mx-auto"> 
@@ -3487,7 +3520,7 @@ function AdminPanel({ onLogout }) {
                                 </div>
                                 <div className="flex justify-between h-10 px-3 sm:px-5 border-t border-black text-sm">
                                     <p className="font-semibold text-sm sm:text-lg">{invoice ? "Invoice" : "Quotation"} No: <span className="font-normal">{billDetails.quotationNumber}</span></p>
-                                    <p className='whitespace-nowrap'>Date: <span>{date.toLocaleDateString("en-GB")}</span></p>
+                                    <p className='whitespace-nowrap'>Date: <span>{new Date(billDetails.documentDate).toLocaleDateString("en-GB")}</span></p>
                                 </div>
                             </div>
                         </div>
@@ -3508,7 +3541,7 @@ function AdminPanel({ onLogout }) {
                             </thead>
                             <tbody className="border border-black">
                                 {billDetails.items.length > 0 ? billDetails.items.map((items, key) => (
-                                    <tr key={key} className="h-10">
+                                    <tr key={items.id} className="h-10">
                                         <td className="text-center border border-black">{key + 1}.</td>
                                         <td className="px-2 border border-black">{items.description}</td>
                                         <td className="px-2 border border-black text-center">{items.quantity}</td>
@@ -3596,7 +3629,7 @@ function AdminPanel({ onLogout }) {
         </div>
     );
     
-    // --- Main Admin Panel Structure (No major changes) ---
+    // --- Main Admin Panel Structure (Keep Original) ---
     
     const SidebarItem = ({ icon: Icon, label, tab }) => (
         <button
