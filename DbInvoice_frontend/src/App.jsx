@@ -7695,7 +7695,7 @@ function App() {
     });
         // --- Generate Unique Number ---
     const generateUniqueNumber = useCallback(async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) return;
 
         try {
@@ -7745,7 +7745,7 @@ function App() {
     };
 
     const handleEditItem = (item) => {
-        setTableItems({
+        setTableItems({ 
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice
@@ -7791,7 +7791,7 @@ function App() {
 
     // --- SAVE (Updated for new loader state saveLoading) ---
     const handleSave = async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) {
             showModal("Authentication missing.", "ALERT");
             return;
@@ -7862,7 +7862,7 @@ function App() {
 
     // --- UPDATE (Updated for saveLoading not global loading) ---
     const handleUpdate = async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) {
             showModal("Authentication missing.", "ALERT");
             return;
@@ -7921,7 +7921,7 @@ function App() {
     const performActualDelete = async () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
 
         try {
             setDeleteLoading(true);   // ⭐ Only Delete button loads
@@ -7991,7 +7991,7 @@ function App() {
         }
 
         try {
-            const token = localStorage.getItem("adminToken");
+            const token = localStorage.getItem("authToken");
             if (!token) {
                 showModal("Authentication token missing.");
                 return;

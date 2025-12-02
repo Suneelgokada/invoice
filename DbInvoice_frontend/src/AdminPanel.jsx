@@ -2370,7 +2370,7 @@ function AdminPanel({ onLogout }) {
     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [saveLoading, setSaveLoading] = useState(false);
-const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
 
 
@@ -2433,8 +2433,8 @@ const [deleteLoading, setDeleteLoading] = useState(false);
             const headers = { Authorization: `Bearer ${token}` };
 
             const [invoicesResponse, quotationsResponse] = await Promise.all([
-                fetch(`${BASE_URL}/api/admin/invoices`, { headers }),
-                fetch(`${BASE_URL}/api/admin/quotations`, { headers })
+                fetch(`${BASE_URL}/api/admin/invoices`, { method: "GET", headers }),
+                fetch(`${BASE_URL}/api/admin/quotations`, { method: "GET", headers })
             ]);
 
             const invoicesData = await invoicesResponse.json();
@@ -2462,7 +2462,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Initial Data Fetch Effect (Keep Original)
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (token) {
             if (activeTab === 'invoices' || activeTab === 'quotations' || activeTab === 'dashboard') {
                 fetchAdminData(token);
@@ -2479,7 +2479,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Generate unique invoice/quotation number (FROM App.jsx)
     const generateUniqueNumber = useCallback(async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) { return; }
 
         try {
@@ -2608,7 +2608,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Handle Update Logic (FROM App.jsx - renamed to handleUpdate)
     const handleUpdate = async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
 
         try {
@@ -2669,7 +2669,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Save invoice/quotation to backend (FROM App.jsx)
     const handleSave = async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
 
         try {
@@ -2744,7 +2744,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
     const performActualDeleteForm = async () => {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
 
         try {
             setDeleteLoading(true);
@@ -2807,7 +2807,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
         try {
             setFormLoading(true);
             setIsEditing(false);
-            const token = localStorage.getItem('adminToken');
+            const token = localStorage.getItem('authToken');
 
             // 1. Try fetching Quotation
             const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
@@ -2929,7 +2929,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
     };
 
     const handleDeleteAdmin = (type, number) => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) { showModal("Authentication token missing. Cannot perform delete.", 'ALERT'); return; }
 
         showModal(
@@ -2946,7 +2946,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
     };
 
     const saveEditAdmin = async () => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) { showModal("Authentication token missing. Cannot save changes.", 'ALERT'); return; }
 
         const type = activeTab === 'invoices' ? 'invoice' : 'quotation';
@@ -3004,7 +3004,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
             return;
         }
 
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('authToken');
         if (!token) {
             showNotification("Authentication token missing. Please log in again.", 'ALERT');
             return;
@@ -3012,7 +3012,7 @@ const [deleteLoading, setDeleteLoading] = useState(false);
 
         setPasswordLoading(true);
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/change-password`, {
+            const response = await fetch(`${BASE_URL}/api/admin/change-user-password`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -3020,6 +3020,8 @@ const [deleteLoading, setDeleteLoading] = useState(false);
                 },
                 body: JSON.stringify({ oldPassword, newPassword })
             });
+
+
 
             const data = await response.json();
 

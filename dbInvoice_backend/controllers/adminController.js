@@ -1,115 +1,115 @@
-// const Admin = require("../models/admin");
-// const jwt = require("jsonwebtoken");
-// const bcrypt = require("bcryptjs");
+// // const Admin = require("../models/admin");
+// // const jwt = require("jsonwebtoken");
+// // const bcrypt = require("bcryptjs");
 
 
-// // Register Admin (Only for initial setup - disable after creating admin)
-// exports.registerAdmin = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
+// // // Register Admin (Only for initial setup - disable after creating admin)
+// // exports.registerAdmin = async (req, res) => {
+// //   try {
+// //     const { username, password } = req.body;
 
-//     // Check if admin already exists
-//     const existingAdmin = await Admin.findOne({ username });
-//     if (existingAdmin) {
-//       return res.status(400).json({
-//         success: false,
-//         error: "Admin already exists"
-//       });
-//     }
+// //     // Check if admin already exists
+// //     const existingAdmin = await Admin.findOne({ username });
+// //     if (existingAdmin) {
+// //       return res.status(400).json({
+// //         success: false,
+// //         error: "Admin already exists"
+// //       });
+// //     }
 
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
+// //     // Hash password
+// //     const hashedPassword = await bcrypt.hash(password, 10);
 
-//     const admin = new Admin({
-//       username,
-//       password: hashedPassword
-//     });
+// //     const admin = new Admin({
+// //       username,
+// //       password: hashedPassword
+// //     });
 
-//     await admin.save();
+// //     await admin.save();
 
-//     res.status(201).json({
-//       success: true,
-//       message: "Admin registered successfully"
-//     });
+// //     res.status(201).json({
+// //       success: true,
+// //       message: "Admin registered successfully"
+// //     });
 
-//   } catch (err) {
-//     res.status(500).json({
-//       success: false,
-//       error: err.message
-//     });
-//   }
-// };
+// //   } catch (err) {
+// //     res.status(500).json({
+// //       success: false,
+// //       error: err.message
+// //     });
+// //   }
+// // };
 
-// // Login Admin
-// exports.loginAdmin = async (req, res) => {
-//   try {
-//     const { username, password } = req.body;
+// // // Login Admin
+// // exports.loginAdmin = async (req, res) => {
+// //   try {
+// //     const { username, password } = req.body;
 
-//     // Check if admin exists
-//     const admin = await Admin.findOne({ username });
-//     if (!admin) {
-//       return res.status(401).json({
-//         success: false,
-//         error: "Invalid credentials"
-//       });
-//     }
+// //     // Check if admin exists
+// //     const admin = await Admin.findOne({ username });
+// //     if (!admin) {
+// //       return res.status(401).json({
+// //         success: false,
+// //         error: "Invalid credentials"
+// //       });
+// //     }
 
-//     // Verify password
-//     const isMatch = await bcrypt.compare(password, admin.password);
-//     if (!isMatch) {
-//       return res.status(401).json({
-//         success: false,
-//         error: "Invalid credentials"
-//       });
-//     }
+// //     // Verify password
+// //     const isMatch = await bcrypt.compare(password, admin.password);
+// //     if (!isMatch) {
+// //       return res.status(401).json({
+// //         success: false,
+// //         error: "Invalid credentials"
+// //       });
+// //     }
 
-//     // Create JWT token
-//     const token = jwt.sign(
-//       { id: admin._id, username: admin.username },
-//       process.env.JWT_SECRET || "your_jwt_secret_key_here",
-//       { expiresIn: "24h" }
-//     );
+// //     // Create JWT token
+// //     const token = jwt.sign(
+// //       { id: admin._id, username: admin.username },
+// //       process.env.JWT_SECRET || "your_jwt_secret_key_here",
+// //       { expiresIn: "24h" }
+// //     );
 
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token,
-//       admin: {
-//         id: admin._id,
-//         username: admin.username
-//       }
-//     });
+// //     res.status(200).json({
+// //       success: true,
+// //       message: "Login successful",
+// //       token,
+// //       admin: {
+// //         id: admin._id,
+// //         username: admin.username
+// //       }
+// //     });
 
-//   } catch (err) {
-//     res.status(500).json({
-//       success: false,
-//       error: err.message
-//     });
-//   }
-// };
+// //   } catch (err) {
+// //     res.status(500).json({
+// //       success: false,
+// //       error: err.message
+// //     });
+// //   }
+// // };
 
-// // Verify Token Middleware
-// exports.verifyToken = (req, res, next) => {
-//   const token = req.headers.authorization?.split(" ")[1];
+// // // Verify Token Middleware
+// // exports.verifyToken = (req, res, next) => {
+// //   const token = req.headers.authorization?.split(" ")[1];
 
-//   if (!token) {
-//     return res.status(403).json({
-//       success: false,
-//       error: "No token provided"
-//     });
-//   }
+// //   if (!token) {
+// //     return res.status(403).json({
+// //       success: false,
+// //       error: "No token provided"
+// //     });
+// //   }
 
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_key_here");
-//     req.admin = decoded;
-//     next();
-//   } catch (err) {
-//     return res.status(401).json({
-//       success: false,
-//       error: "Invalid or expired token"
-//     });
-//   }
-// };
+// //   try {
+// //     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_key_here");
+// //     req.admin = decoded;
+// //     next();
+// //   } catch (err) {
+// //     return res.status(401).json({
+// //       success: false,
+// //       error: "Invalid or expired token"
+// //     });
+// //   }
+// // };
 
 
 
