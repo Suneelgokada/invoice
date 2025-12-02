@@ -112,82 +112,59 @@
 // };
 
 
-const Admin = require("../models/admin");
+
+// controllers/accountController.js
+const Account = require("../models/account"); // ✅ match your schema filename
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-// 1. Register User (Admin or Employee)
-exports.registerAdmin = async (req, res) => {
+// 1. Register User (Admin or User)
+exports.register = async (req, res) => {
   try {
-    // Frontend/Postman nundi 'role' ni destruct cheyandi
     const { username, password, role } = req.body;
 
-    // Check if user already exists
-    const existingAdmin = await Admin.findOne({ username });
-    if (existingAdmin) {
-      return res.status(400).json({
-        success: false,
-        error: "User already exists"
-      });
+    // Check if username already exists
+    const existing = await Account.findOne({ username });
+    if (existing) {
+      return res.status(400).json({ success: false, error: "User already exists" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user with Role
-    const admin = new Admin({
+    // Create new account (password auto-hashed by pre-save hook)
+    const account = new Account({
       username,
-      password: hashedPassword,
-      // Role ivvakapothe default ga 'employee' teeskuntundi
-      role: role || "employee" 
+      password,
+      role: role || "user" // default user if not provided
     });
 
-    await admin.save();
+    await account.save();
 
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      role: admin.role // Response lo role chupistam
+      role: account.role
     });
-
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// 2. Login User
-exports.loginAdmin = async (req, res) => {
+// 2. Login
+exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Check if user exists
-    const admin = await Admin.findOne({ username });
-    if (!admin) {
-      return res.status(401).json({
-        success: false,
-        error: "Invalid credentials"
-      });
+    const account = await Account.findOne({ username });
+    if (!account) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, admin.password);
+    const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        error: "Invalid credentials"
-      });
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    // Create JWT token (Token lo role ni include chestunnam)
     const token = jwt.sign(
-      { 
-        id: admin._id, 
-        username: admin.username, 
-        role: admin.role // IMPORTANT: Token lo role save chestunnam
-      },
+      { id: account._id, username: account.username, role: account.role },
       process.env.JWT_SECRET || "your_jwt_secret_key_here",
       { expiresIn: "24h" }
     );
@@ -196,92 +173,69 @@ exports.loginAdmin = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      // Frontend ki role pampistunnam (App.js lo redirect cheyadaniki)
-      role: admin.role, 
-      admin: {
-        id: admin._id,
-        username: admin.username,
-        role: admin.role
-      }
+      role: account.role,
+      account: { id: account._id, username: account.username, role: account.role }
     });
-
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
 // 3. Verify Token Middleware
 exports.verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-
   if (!token) {
-    return res.status(403).json({
-      success: false,
-      error: "No token provided"
-    });
+    return res.status(403).json({ success: false, error: "No token provided" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_key_here");
-    
-    // Decoded object lo ippudu { id, username, role } moodu untayi
-    req.admin = decoded; 
-    
+    req.account = decoded; // { id, username, role }
     next();
   } catch (err) {
-    return res.status(401).json({
-      success: false,
-      error: "Invalid or expired token"
-    });
+    return res.status(401).json({ success: false, error: "Invalid or expired token" });
   }
 };
 
-
+// 4. Change Any User Password (Admin only)
 exports.changePassword = async (req, res) => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { userId, newPassword } = req.body;
 
-    // Token verify middleware lo req.admin set chestunnam
-    const adminId = req.admin.id;
-
-    // Find user by ID
-    const admin = await Admin.findById(adminId);
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found"
-      });
+    if (!req.account || req.account.role !== "admin") {
+      return res.status(403).json({ success: false, error: "Only admin can perform this action" });
     }
 
-    // Verify old password
-    const isMatch = await bcrypt.compare(oldPassword, admin.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        error: "Old password is incorrect"
-      });
+    const user = await Account.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
+    await user.save();
 
-    // Update password
-    admin.password = hashedNewPassword;
-    await admin.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully"
-    });
-
+    res.status(200).json({ success: true, message: "Password updated successfully" });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
+// 5. Delete User/Admin (Admin only)
+exports.deleteAccount = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!req.account || req.account.role !== "admin") {
+      return res.status(403).json({ success: false, error: "Only admin can delete accounts" });
+    }
+
+    const deleted = await Account.findByIdAndDelete(userId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Account deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};

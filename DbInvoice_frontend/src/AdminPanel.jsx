@@ -167,7 +167,7 @@
 //   // Login Screen
 //   if (!isLoggedIn) {
 //     return (
-  
+
 //       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4 relative overflow-hidden">
 //         {/* Animated Background Elements */}
 //         <div className="absolute inset-0 overflow-hidden">
@@ -1033,7 +1033,7 @@
 //     const showNotification = (message, type) => {
 //         showModal(message, 'ALERT');
 //     };
-    
+
 //     // --- Data Fetching Logic (Admin Dashboard) ---
 //     const fetchAdminData = useCallback(async (token) => {
 //         setDashboardLoading(true);
@@ -1320,7 +1320,7 @@
 //         const docType = invoiceMode ? "Invoice" : "Quotation";
 //         const documentNumber = billDetails.quotationNumber;
 //         const token = localStorage.getItem('adminToken');
-        
+
 //         try {
 //             setFormLoading(true);
 //             const urlPath = invoiceMode ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
@@ -1455,7 +1455,7 @@
 //         }
 //     };
 //     // --- END Billing Form Logic ---
-    
+
 
 //     // --- Admin List Handlers (Existing Logic - Updated to use Modal/fetchAdminData) ---
 
@@ -1498,7 +1498,7 @@
 //             () => performDeleteAdmin(type, number, token)
 //         );
 //     };
-    
+
 //     const handleEditAdmin = (item) => {
 //         setEditItem(item);
 //         const value = item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue !== undefined ? item.quotationValue : 0;
@@ -1547,7 +1547,7 @@
 
 //     const totalInvoiceValue = invoices.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
 //     const totalQuotationCount = quotations.length;
-    
+
 //     const currentData = activeTab === 'invoices' ? invoices : quotations;
 
 //     const renderDashboard = () => (
@@ -1608,13 +1608,13 @@
 //             </div>
 //         </div>
 //     );
-    
+
 //     const renderDataList = (type) => (
 //         <div className="max-w-7xl mx-auto px-6 py-8">
 //             <h2 className="text-3xl font-bold text-gray-800 mb-6">
 //                 <ClipboardList size={28} className="inline mr-2 text-indigo-600" /> {type === 'invoices' ? "Invoices" : "Quotations"} List
 //             </h2>
-            
+
 //             <div className="flex mb-6 hide-on-print">
 //                 <button
 //                     onClick={() => setActiveTab('invoices')}
@@ -1734,7 +1734,7 @@
 //             </div>
 //         </div>
 //     );
-    
+
 //     const renderChangePassword = () => (
 //         <div className="max-w-7xl mx-auto px-6 py-8">
 //             <h2 className="text-3xl font-bold text-gray-800 mb-6">🔑 Change Password</h2>
@@ -1776,7 +1776,7 @@
 //             </div>
 //         </div>
 //     );
-    
+
 //     const renderNewBillForm = () => (
 //         <div className="max-w-7xl mx-auto px-6 py-8">
 //             <h2 className="text-3xl font-bold text-gray-800 mb-6">📄 New Bill Creator</h2>
@@ -2129,9 +2129,9 @@
 //             </div>
 //         </div>
 //     );
-    
+
 //     // --- Main Admin Panel Structure ---
-    
+
 //     const SidebarItem = ({ icon: Icon, label, tab }) => (
 //         <button
 //             onClick={() => {
@@ -2195,7 +2195,7 @@
 //         <div className="min-h-screen flex bg-gray-100 font-sans">
 //             {/* Modal for all custom alerts/confirms */}
 //             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
-            
+
 //             {/* Sidebar */}
 //             <Sidebar />
 
@@ -2350,7 +2350,7 @@ function AdminPanel({ onLogout }) {
     const [dashboardError, setDashboardError] = useState('');
     const [editItem, setEditItem] = useState(null);
     const [editValue, setEditValue] = useState('');
-    
+
     // --- Billing Form State (Updated with App.jsx variables/defaults) ---
     const date = new Date();
     const printRef = useRef(null);
@@ -2360,15 +2360,19 @@ function AdminPanel({ onLogout }) {
     const [cgst, setCGST] = useState(false);
     const [taxableValue, setTaxableValue] = useState(0);
     const [invoiceValue, setInvoiceValue] = useState(0);
-    const [SGSTAmount, setSGSTAmount] = useState(0); 
-    const [CGSTAmount, setCGSTAmount] = useState(0); 
+    const [SGSTAmount, setSGSTAmount] = useState(0);
+    const [CGSTAmount, setCGSTAmount] = useState(0);
     const [searchNumber, setSearchNumber] = useState("");
     const [formLoading, setFormLoading] = useState(false); // Renamed from 'loading' in App.jsx
     const [isEditing, setIsEditing] = useState(false);
     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
     const [isItemEditing, setIsItemEditing] = useState(false);
     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [saveLoading, setSaveLoading] = useState(false);
+const [deleteLoading, setDeleteLoading] = useState(false);
+
+
 
     const [billDetails, setBillDetails] = useState({
         billTO: "",
@@ -2418,7 +2422,7 @@ function AdminPanel({ onLogout }) {
     const showNotification = (message, type) => {
         showModal(message, 'ALERT');
     };
-    
+
     // ----------------------------------------------------
     // --- 1. Data Fetching Logic (Admin Dashboard & Lists) - Keep Original ---
     // ----------------------------------------------------
@@ -2429,8 +2433,8 @@ function AdminPanel({ onLogout }) {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [invoicesResponse, quotationsResponse] = await Promise.all([
-                fetch(`${BASE_URL}/api/admin/invoices`, { headers }), 
-                fetch(`${BASE_URL}/api/admin/quotations`, { headers }) 
+                fetch(`${BASE_URL}/api/admin/invoices`, { headers }),
+                fetch(`${BASE_URL}/api/admin/quotations`, { headers })
             ]);
 
             const invoicesData = await invoicesResponse.json();
@@ -2466,7 +2470,7 @@ function AdminPanel({ onLogout }) {
         } else {
             setDashboardError("Unauthorized access. Token missing.");
         }
-    }, [activeTab, fetchAdminData]); 
+    }, [activeTab, fetchAdminData]);
 
 
     // ----------------------------------------------------
@@ -2475,14 +2479,14 @@ function AdminPanel({ onLogout }) {
 
     // Generate unique invoice/quotation number (FROM App.jsx)
     const generateUniqueNumber = useCallback(async () => {
-        const token = localStorage.getItem('adminToken'); 
+        const token = localStorage.getItem('adminToken');
         if (!token) { return; }
 
         try {
             const url = quotation
                 ? `${BASE_URL}/api/quotation/generate`
                 : `${BASE_URL}/api/invoice/generate`;
-            
+
             const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
             const data = await response.json();
 
@@ -2522,7 +2526,7 @@ function AdminPanel({ onLogout }) {
             // 2. Generate a new number (will run whenever activeTab, quotation, or invoice changes)
             generateUniqueNumber();
         }
-    }, [activeTab, quotation, invoice, generateUniqueNumber]); 
+    }, [activeTab, quotation, invoice, generateUniqueNumber]);
 
 
     // Calculation effect (Kept original logic, adjusted variable names)
@@ -2553,7 +2557,7 @@ function AdminPanel({ onLogout }) {
         e.preventDefault();
         setIsItemEditing(false);
         setEditingItemOriginal(null);
-        
+
         // Add unique ID for better list tracking
         setBillDetails({
             ...billDetails,
@@ -2612,7 +2616,7 @@ function AdminPanel({ onLogout }) {
 
             const documentNumber = billDetails.quotationNumber;
             const docKey = invoice ? "invoiceNumber" : "quotationNumber";
-            const valueKey = invoice ? "invoiceValue" : "quotationValue"; 
+            const valueKey = invoice ? "invoiceValue" : "quotationValue";
             const urlPath = invoice ? "invoice/update" : "quotation/update";
             const url = `${BASE_URL}/api/${urlPath}`;
 
@@ -2627,7 +2631,7 @@ function AdminPanel({ onLogout }) {
                 taxableValue: taxableValue,
                 SGSTAmount: SGSTAmount,
                 CGSTAmount: CGSTAmount,
-                [valueKey]: invoiceValue, 
+                [valueKey]: invoiceValue,
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
                 documentDate: billDetails.documentDate,
             };
@@ -2642,7 +2646,7 @@ function AdminPanel({ onLogout }) {
 
             if (data.success) {
                 showNotification(`${invoice ? "Invoice" : "Quotation"} #${documentNumber} updated successfully!`, 'success');
-                fetchAdminData(token); 
+                fetchAdminData(token);
             } else {
                 showNotification(`Update Error: ${data.message || data.error}`, 'error');
             }
@@ -2669,12 +2673,12 @@ function AdminPanel({ onLogout }) {
         if (!token) { showNotification("Authentication token missing. Cannot save.", 'error'); return; }
 
         try {
-            setFormLoading(true);
+            setSaveLoading(true);
 
             const docKey = quotation ? "quotationNumber" : "invoiceNumber";
             const valueKey = quotation ? "quotationValue" : "invoiceValue";
-            const safeDocumentDate = billDetails.documentDate 
-                ? billDetails.documentDate 
+            const safeDocumentDate = billDetails.documentDate
+                ? billDetails.documentDate
                 : new Date().toISOString().split("T")[0];
 
             const body = {
@@ -2698,7 +2702,7 @@ function AdminPanel({ onLogout }) {
                 ...body,
                 [docKey]: body[docKey]
             };
-            
+
             // Remove the conflicting key if it exists
             if (quotation) { delete finalBody.invoiceNumber; } else { delete finalBody.quotationNumber; }
 
@@ -2719,12 +2723,12 @@ function AdminPanel({ onLogout }) {
                 const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
                 showNotification(`${quotation ? "Quotation" : "Invoice"} saved successfully → ${savedNumber}`, 'success');
                 setIsEditing(true);
-                setBillDetails(prev => ({ 
-                    ...prev, 
+                setBillDetails(prev => ({
+                    ...prev,
                     quotationNumber: savedNumber,
-                    documentDate: safeDocumentDate 
+                    documentDate: safeDocumentDate
                 }));
-                fetchAdminData(token); 
+                fetchAdminData(token);
             } else {
                 showNotification(`Save Error: ${data.error}`, 'error');
             }
@@ -2732,7 +2736,7 @@ function AdminPanel({ onLogout }) {
             console.error(err);
             showNotification("Unexpected error during save.", 'error');
         } finally {
-            setFormLoading(false);
+            setSaveLoading(false);
         }
     };
 
@@ -2741,9 +2745,9 @@ function AdminPanel({ onLogout }) {
         const docType = invoice ? "Invoice" : "Quotation";
         const documentNumber = billDetails.quotationNumber;
         const token = localStorage.getItem('adminToken');
-        
+
         try {
-            setFormLoading(true);
+            setDeleteLoading(true);
             const urlPath = invoice ? `invoice/delete/${documentNumber}` : `quotation/delete/${documentNumber}`;
             const url = `${BASE_URL}/api/${urlPath}`;
 
@@ -2761,7 +2765,7 @@ function AdminPanel({ onLogout }) {
                 setCGST(false);
                 setIsEditing(false);
                 generateUniqueNumber();
-                fetchAdminData(token); 
+                fetchAdminData(token);
             } else {
                 showNotification(`Delete Error: ${data.message || data.error}`, 'error');
             }
@@ -2769,7 +2773,7 @@ function AdminPanel({ onLogout }) {
             console.error('Error deleting data:', err);
             showNotification('Error deleting data. Check server connection.', 'error');
         } finally {
-            setFormLoading(false);
+            setDeleteLoading(false);
         }
     };
 
@@ -2802,8 +2806,8 @@ function AdminPanel({ onLogout }) {
 
         try {
             setFormLoading(true);
-            setIsEditing(false); 
-            const token = localStorage.getItem('adminToken'); 
+            setIsEditing(false);
+            const token = localStorage.getItem('adminToken');
 
             // 1. Try fetching Quotation
             const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
@@ -2851,7 +2855,7 @@ function AdminPanel({ onLogout }) {
 
                 if (response.ok && result.invoice) {
                     const inv = result.invoice;
-                    
+
                     const fetchedDate = inv.documentDate
                         ? inv.documentDate
                         : new Date().toISOString().split("T")[0];
@@ -2934,7 +2938,7 @@ function AdminPanel({ onLogout }) {
             () => performDeleteAdmin(type, number, token)
         );
     };
-    
+
     const handleEditAdmin = (item) => {
         setEditItem(item);
         const value = item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue !== undefined ? item.quotationValue : 0;
@@ -2958,8 +2962,8 @@ function AdminPanel({ onLogout }) {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        [`${type}Value`]: parseFloat(editValue) 
+                    body: JSON.stringify({
+                        [`${type}Value`]: parseFloat(editValue)
                     })
                 }
             );
@@ -3036,7 +3040,7 @@ function AdminPanel({ onLogout }) {
             setPasswordLoading(false);
         }
     };
-    
+
     // ----------------------------------------------------
     // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
     // ----------------------------------------------------
@@ -3100,13 +3104,13 @@ function AdminPanel({ onLogout }) {
             </div>
         </div>
     );
-    
+
     const renderDataList = (type) => (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">
                 <ClipboardList size={28} className="inline mr-2 text-indigo-600" /> {type === 'invoices' ? "Invoices" : "Quotations"} List
             </h2>
-            
+
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
                 {dashboardLoading ? (
                     <div className="text-center py-20">
@@ -3160,21 +3164,21 @@ function AdminPanel({ onLogout }) {
                                             {editItem &&
                                                 (editItem.invoiceNumber === item.invoiceNumber ||
                                                     editItem.quotationNumber === item.quotationNumber) ? (
-                                                        <input
-                                                            type="number"
-                                                            value={editValue}
-                                                            min="0"
-                                                            step="0.01"
-                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                            className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 transition"
-                                                            placeholder="New Value"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-sm font-bold text-green-600">
-                                                            {/* Check which value field to display */}
-                                                            ₹{(item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue || 0).toFixed(2)}
-                                                        </span>
-                                                    )}
+                                                <input
+                                                    type="number"
+                                                    value={editValue}
+                                                    min="0"
+                                                    step="0.01"
+                                                    onChange={(e) => setEditValue(e.target.value)}
+                                                    className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 transition"
+                                                    placeholder="New Value"
+                                                />
+                                            ) : (
+                                                <span className="text-sm font-bold text-green-600">
+                                                    {/* Check which value field to display */}
+                                                    ₹{(item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue || 0).toFixed(2)}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center whitespace-nowrap">
                                             <span className="text-xs text-gray-500">
@@ -3186,16 +3190,16 @@ function AdminPanel({ onLogout }) {
                                                 {editItem &&
                                                     (editItem.invoiceNumber === item.invoiceNumber ||
                                                         editItem.quotationNumber === item.quotationNumber) ? (
-                                                            <>
-                                                                <button onClick={saveEditAdmin} disabled={dashboardLoading} className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50">Save</button>
-                                                                <button onClick={() => { setEditItem(null); setEditValue(''); }} disabled={dashboardLoading} className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50">Cancel</button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <button onClick={() => handleEditAdmin(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"><Edit size={14} /> Edit</button>
-                                                                <button onClick={() => handleDeleteAdmin(type === 'invoices' ? 'invoice' : 'quotation', item.invoiceNumber || item.quotationNumber)} className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"><Trash2 size={14} /> Delete</button>
-                                                            </>
-                                                        )}
+                                                    <>
+                                                        <button onClick={saveEditAdmin} disabled={dashboardLoading} className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50">Save</button>
+                                                        <button onClick={() => { setEditItem(null); setEditValue(''); }} disabled={dashboardLoading} className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50">Cancel</button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button onClick={() => handleEditAdmin(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"><Edit size={14} /> Edit</button>
+                                                        <button onClick={() => handleDeleteAdmin(type === 'invoices' ? 'invoice' : 'quotation', item.invoiceNumber || item.quotationNumber)} className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"><Trash2 size={14} /> Delete</button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -3207,7 +3211,7 @@ function AdminPanel({ onLogout }) {
             </div>
         </div>
     );
-    
+
     const renderChangePassword = () => (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">🔑 Change Password</h2>
@@ -3270,13 +3274,13 @@ function AdminPanel({ onLogout }) {
             </div>
         </div>
     );
-    
+
     // --- REPLACED: renderNewBillForm (FROM App.jsx UI) ---
     const renderNewBillForm = () => (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">📄 New Bill Creator</h2>
             <div className="w-full flex items-center justify-center">
-                <div className="font-sans w-full max-w-4xl"> 
+                <div className="font-sans w-full max-w-4xl">
                     {/* Search Section */}
                     <div className="border-2 border-purple-400 rounded-lg p-5 bg-purple-50 mb-5 hide-on-print">
                         <p className="pb-3 text-xl font-semibold uppercase text-purple-600">
@@ -3321,16 +3325,16 @@ function AdminPanel({ onLogout }) {
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             1. {invoice ? "Invoice" : "Quotation"} Details
                         </p>
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5"> 
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5">
                             <h1 className="font-medium">{invoice ? "Invoice" : "Quotation"} Number:</h1>
                             <input
                                 type="text"
                                 value={billDetails.quotationNumber}
                                 placeholder={`Auto-generated`}
-                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto" 
+                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto"
                                 readOnly
                             />
-                             <h1 className="font-medium">Date:</h1>
+                            <h1 className="font-medium">Date:</h1>
                             <input
                                 type="date"
                                 value={billDetails.documentDate}
@@ -3340,14 +3344,14 @@ function AdminPanel({ onLogout }) {
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
                             {invoice && (
-                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto"> 
+                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto">
                                     <h1 className="font-medium">Quotation Ref:</h1>
                                     <div className="flex items-center border border-blue-500 rounded-lg shadow-md flex-1">
                                         <input
                                             type="text"
                                             value={billDetails.associatedQuotationNumber}
                                             placeholder={`Enter Q-Number to load`}
-                                            className="outline-none rounded-l-lg px-3 py-2 flex-1 min-w-0" 
+                                            className="outline-none rounded-l-lg px-3 py-2 flex-1 min-w-0"
                                             onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })}
                                         />
                                         <button
@@ -3368,7 +3372,7 @@ function AdminPanel({ onLogout }) {
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             2. Recipient Details
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5"> 
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Bill TO</h1><input type="text" placeholder="Enter Biller Details" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.billTO} onChange={(e) => setBillDetails({ ...billDetails, billTO: e.target.value })} /></div>
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Address</h1><input type="text" placeholder="Enter Biller Address" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} /></div>
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Customer GSTIN</h1><input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} /></div>
@@ -3378,7 +3382,7 @@ function AdminPanel({ onLogout }) {
                     {/* 3. Items Section */}
                     <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 w-full hide-on-print">
                         <form className="flex items-start justify-start flex-col" onSubmit={isItemEditing ? handleUpdateItem : handleAddItem}>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3"> 
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full pb-3">
                                 <p className="text-xl font-semibold uppercase text-blue-600 mb-2 sm:mb-0">3. Items</p>
                                 <div className="flex gap-3">
                                     {isItemEditing && (
@@ -3389,7 +3393,7 @@ function AdminPanel({ onLogout }) {
                                     </button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full"> 
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Description</h1><input type="text" required value={tableItems.description} placeholder="Enter Description" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, description: e.target.value })} /></div>
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Quantity</h1><input type="number" required value={tableItems.quantity} placeholder="Enter Quantity" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, quantity: e.target.value })} /></div>
                                 <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Unit Price (₹)</h1><input type="number" required value={tableItems.unitPrice} placeholder="Single Price" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" onChange={(e) => setTableItems({ ...tableItems, unitPrice: e.target.value })} /></div>
@@ -3399,7 +3403,7 @@ function AdminPanel({ onLogout }) {
                         {/* Items Table Display */}
                         {billDetails.items.length > 0 && (
                             <div className="overflow-x-auto w-full py-5">
-                                <div className="min-w-[40rem] md:min-w-full"> 
+                                <div className="min-w-[40rem] md:min-w-full">
                                     <table className="w-full border-collapse border border-blue-500">
                                         <tbody className="w-full">
                                             <tr className="bg-indigo-100 font-bold border border-blue-500">
@@ -3432,34 +3436,35 @@ function AdminPanel({ onLogout }) {
                     {/* 4. GST Info */}
                     <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 hide-on-print">
                         <p className="text-xl font-semibold uppercase text-blue-600">4. GST Info</p>
-                        <div className="flex flex-wrap items-center justify-start gap-5 mt-3"> 
+                        <div className="flex flex-wrap items-center justify-start gap-5 mt-3">
                             <button type="button" onClick={() => setSGST(!sgst)} className={`${sgst ? "bg-red-400" : "bg-green-600"} text-white px-5 py-2 rounded-lg duration-300 cursor-pointer font-medium shadow-md`}>SGST {sgst ? 'ON' : 'OFF'}</button>
                             <button type="button" onClick={() => setCGST(!cgst)} className={`${cgst ? "bg-red-400" : "bg-green-600"} text-white px-5 py-2 rounded-lg duration-300 cursor-pointer font-medium shadow-md`}>CGST {cgst ? 'ON' : 'OFF'}</button>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3 hide-on-print"> 
+                    <div className="flex flex-wrap gap-3 hide-on-print">
                         {/* Save/Update Button */}
                         <button
                             onClick={handleSaveOrUpdate}
-                            disabled={formLoading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress}
+                            disabled={saveLoading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress}
                             className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition flex items-center justify-center min-w-[10rem]"
                         >
-                            {formLoading ? <Loader size={20} className="animate-spin" /> : isEditing ? 'Update Document' : 'Save Document'}
+                            {saveLoading ? <Loader size={20} className="animate-spin" /> : isEditing ? 'Update Document' : 'Save Document'}
                         </button>
 
                         {/* Delete Button (Visible only in Editing mode) */}
                         {isEditing && (
                             <button
                                 onClick={handleDeleteForm}
-                                disabled={formLoading}
+                                disabled={deleteLoading}
                                 className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition flex items-center justify-center min-w-[10rem]"
                             >
-                                {formLoading ? 'Deleting...' : 'Delete Document'}
+                                {deleteLoading ? 'Deleting...' : 'Delete Document'}
                             </button>
                         )}
                     </div>
+
                 </div>
             </div>
 
@@ -3471,7 +3476,7 @@ function AdminPanel({ onLogout }) {
                             Print Receipt
                         </button>
                     </div>
-                    
+
                 )}
                 content={() => printRef.current}
                 pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
@@ -3480,16 +3485,16 @@ function AdminPanel({ onLogout }) {
             {/* --- PDF/Print PREVIEW Area (Updated to use documentDate) --- */}
             <div className="w-full bg-white flex items-center justify-center p-2 sm:p-4">
                 <div className="w-full max-w-full xl:max-w-[60rem] border border-gray-300 shadow-xl overflow-x-auto">
-                    <div ref={printRef} className="flex flex-col min-w-[50rem] xl:w-[60rem] bg-white text-black printable-content mx-auto"> 
+                    <div ref={printRef} className="flex flex-col min-w-[50rem] xl:w-[60rem] bg-white text-black printable-content mx-auto">
 
                         {/* Header Row */}
                         <div className="flex flex-row h-[15rem] text-sm border border-black">
                             {/* Left Side: Bill To */}
-                            <div className="h-full w-2/5 sm:w-[20rem] border-r border-black flex flex-col"> 
+                            <div className="h-full w-2/5 sm:w-[20rem] border-r border-black flex flex-col">
                                 <div className="flex items-center justify-center h-[30%] border-b border-black">
                                     <p className="text-center font-bold text-lg sm:text-2xl">{invoice ? "TAX INVOICE" : "QUOTATION"}</p>
                                 </div>
-                                <div className="flex-1 px-3 sm:px-5 py-2 overflow-hidden"> 
+                                <div className="flex-1 px-3 sm:px-5 py-2 overflow-hidden">
                                     <p className="font-semibold text-base sm:text-lg">Bill to:</p>
                                     {billDetails.customerGSTIN && <p className='truncate'><span className="font-medium">GSTIN:</span> {billDetails.customerGSTIN}</p>}
                                     <p className='truncate'>{billDetails.billTO}</p>
@@ -3501,7 +3506,7 @@ function AdminPanel({ onLogout }) {
                             </div>
 
                             {/* Right Side: Company Details */}
-                            <div className="h-full w-3/5 sm:w-[40rem] flex flex-col justify-between"> 
+                            <div className="h-full w-3/5 sm:w-[40rem] flex flex-col justify-between">
                                 <div className="p-3 sm:p-5 flex items-start justify-between">
                                     <div className="w-[70%] text-xs sm:text-sm">
                                         <p className="font-semibold text-base sm:text-xl truncate">GSTIN: <span className="font-medium text-xs sm:text-base">37AKOPY6766H1Z4</span></p>
@@ -3509,7 +3514,7 @@ function AdminPanel({ onLogout }) {
                                         <p className="font-semibold text-base pt-2">Address:</p>
                                         <p className='text-xs sm:text-sm'>Flat No 406, 5th Floor, Botcha Square, Madhavadhara, VISAKHAPATNAM-530007</p>
                                     </div>
-                                    <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] flex items-center justify-center flex-shrink-0"> 
+                                    <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] flex items-center justify-center flex-shrink-0">
                                         <img
                                             src="https://designblocks.in/img/DB.png"
                                             alt="Design Blocks Logo"
@@ -3526,7 +3531,7 @@ function AdminPanel({ onLogout }) {
                         </div>
 
                         {/* Item table container (force full width and rely on internal structure for print) */}
-                        <div className="h-10 w-full border-x border-black"></div> 
+                        <div className="h-10 w-full border-x border-black"></div>
 
                         {/* Items Table */}
                         <table className="w-full text-sm table-fixed">
@@ -3594,14 +3599,14 @@ function AdminPanel({ onLogout }) {
                                 {/* Bank Details & Signature */}
                                 <tr>
                                     <td colSpan={5} className="p-2 border-t border-black text-xs">
-                                        <div className="flex flex-col sm:flex-row justify-between"> 
-                                            <div className="w-full sm:w-1/2 mb-4 sm:mb-0"> 
+                                        <div className="flex flex-col sm:flex-row justify-between">
+                                            <div className="w-full sm:w-1/2 mb-4 sm:mb-0">
                                                 <p className="font-semibold text-sm">BANK DETAILS:-</p>
                                                 <p>UNION BANK OF INDIA, MURALI NAGAR, VISAKHAPATNAM</p>
                                                 <p><span className="font-semibold">A/C NUMBER-</span> 753601010050187; <span className="font-semibold">IFSC:</span> UBIN0810746</p>
                                                 <p><span className="font-semibold">UPI ID:</span> designblocks@ybl</p>
                                             </div>
-                                            <div className="w-full sm:w-1/2 text-left sm:text-right pt-2 sm:pt-6"> 
+                                            <div className="w-full sm:w-1/2 text-left sm:text-right pt-2 sm:pt-6">
                                                 <p className="text-sm">For <span className="uppercase font-bold">Design Blocks</span></p>
                                                 <p className="mt-6 text-gray-500">(Authorized Signatory)</p>
                                             </div>
@@ -3628,14 +3633,14 @@ function AdminPanel({ onLogout }) {
             </div>
         </div>
     );
-    
+
     // --- Main Admin Panel Structure (Keep Original) ---
-    
+
     const SidebarItem = ({ icon: Icon, label, tab }) => (
         <button
             onClick={() => {
                 setActiveTab(tab);
-                setIsSidebarOpen(false); 
+                setIsSidebarOpen(false);
                 if (tab !== 'newBill') {
                     setQuotation(true);
                     setInvoice(false);
@@ -3658,7 +3663,7 @@ function AdminPanel({ onLogout }) {
         `}>
             <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
                 <span className="text-indigo-300">Admin Portal
-                </span> 
+                </span>
                 <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1">
                     <X size={24} />
                 </button>
@@ -3700,14 +3705,14 @@ function AdminPanel({ onLogout }) {
     };
 
     return (
-        <div className="min-h-screen flex bg-gray-100 font-sans md:pl-64"> 
+        <div className="min-h-screen flex bg-gray-100 font-sans md:pl-64">
             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
-            
+
             <Sidebar />
 
             {isSidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 md:hidden hide-on-print" 
+                <div
+                    className="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 md:hidden hide-on-print"
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
@@ -3716,8 +3721,8 @@ function AdminPanel({ onLogout }) {
             <div className="flex-1 overflow-y-auto">
                 <header className="bg-white text-gray-800 shadow-md p-4 sticky top-0 z-10 border-b hide-on-print">
                     <div className="max-w-full mx-auto flex justify-start items-center">
-                        <button 
-                            onClick={() => setIsSidebarOpen(true)} 
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
                             className="p-1 mr-4 text-indigo-800 md:hidden"
                             aria-label="Toggle Menu"
                         >
