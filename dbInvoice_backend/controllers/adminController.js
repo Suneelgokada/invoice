@@ -117,6 +117,8 @@
 const Account = require("../models/account"); // ✅ match your schema filename
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const Invoice = require("../models/invoice");
+const Quotation = require("../models/quotation");
 
 // 1. Register User (Admin or User)
 exports.register = async (req, res) => {
@@ -198,27 +200,56 @@ exports.verifyToken = (req, res, next) => {
 };
 
 // 4. Change Any User Password (Admin only)
+// Change Password - works for both user and admin
 exports.changePassword = async (req, res) => {
   try {
-    const { userId, newPassword } = req.body;
+    const { oldPassword, newPassword, userId, username } = req.body;
 
-    if (!req.account || req.account.role !== "admin") {
-      return res.status(403).json({ success: false, error: "Only admin can perform this action" });
+    // If admin → reset another user's password
+    if (req.account && req.account.role === "admin") {
+      let user;
+
+      // Allow either userId or username
+      if (userId) {
+        user = await Account.findById(userId);
+      } else if (username) {
+        user = await Account.findOne({ username });
+      }
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: "User not found" });
+      }
+
+      user.password = newPassword; // auto-hashed by pre-save hook
+      await user.save();
+
+      return res.status(200).json({ success: true, message: "Password reset by admin successfully" });
     }
 
-    const user = await Account.findById(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+    // If normal user → change own password
+    if (req.account) {
+      const user = await Account.findById(req.account.id);
+      if (!user) {
+        return res.status(404).json({ success: false, error: "User not found" });
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, error: "Old password incorrect" });
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      return res.status(200).json({ success: true, message: "Password updated successfully" });
     }
 
-    user.password = newPassword;
-    await user.save();
-
-    res.status(200).json({ success: true, message: "Password updated successfully" });
+    return res.status(403).json({ success: false, error: "Unauthorized" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 // 5. Delete User/Admin (Admin only)
 exports.deleteAccount = async (req, res) => {
@@ -237,5 +268,90 @@ exports.deleteAccount = async (req, res) => {
     res.status(200).json({ success: true, message: "Account deleted successfully" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// 6. Analytics (Invoices + Quotations)
+// 6. Analytics (Invoices + Quotations)
+exports.analytics = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+
+    const invoices = await Invoice.find({
+      createdAt: {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1)
+      }
+    });
+
+    const quotations = await Quotation.find({
+      createdAt: {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1)
+      }
+    });
+
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthlyData = monthNames.map((month, index) => {
+      const monthInvoices = invoices.filter(inv => new Date(inv.createdAt).getMonth() === index);
+      const monthQuotations = quotations.filter(quot => new Date(quot.createdAt).getMonth() === index);
+
+      const totalValue = monthInvoices.reduce((sum, inv) => sum + (inv.invoiceValue || 0), 0) +
+                         monthQuotations.reduce((sum, quot) => sum + (quot.quotationValue || 0), 0);
+
+      return {
+        month,
+        invoices: monthInvoices.length,
+        quotations: monthQuotations.length,
+        totalValue: parseFloat(totalValue.toFixed(2))
+      };
+    });
+
+    const startOfMonth = new Date(currentYear, currentMonth, 1);
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+    const currentMonthInvoices = invoices.filter(inv => {
+      const date = new Date(inv.createdAt);
+      return date >= startOfMonth && date <= endOfMonth;
+    });
+
+    const currentMonthQuotations = quotations.filter(quot => {
+      const date = new Date(quot.createdAt);
+      return date >= startOfMonth && date <= endOfMonth;
+    });
+
+    const weeklyData = [];
+    const weeksInMonth = Math.ceil(endOfMonth.getDate() / 7);
+
+    for (let week = 0; week < weeksInMonth; week++) {
+      const weekStart = new Date(currentYear, currentMonth, week * 7 + 1);
+      const weekEnd = new Date(currentYear, currentMonth, (week + 1) * 7);
+
+      const weekInvoices = currentMonthInvoices.filter(inv => {
+        const date = new Date(inv.createdAt);
+        return date >= weekStart && date <= weekEnd;
+      });
+
+      const weekQuotations = currentMonthQuotations.filter(quot => {
+        const date = new Date(quot.createdAt);
+        return date >= weekStart && date <= weekEnd;
+      });
+
+      const totalValue = weekInvoices.reduce((sum, inv) => sum + (inv.invoiceValue || 0), 0) +
+                         weekQuotations.reduce((sum, quot) => sum + (quot.quotationValue || 0), 0);
+
+      weeklyData.push({
+        week: `Week ${week + 1}`,
+        invoices: weekInvoices.length,
+        quotations: weekQuotations.length,
+        totalValue: parseFloat(totalValue.toFixed(2))
+      });
+    }
+
+    res.json({ success: true, monthlyData, weeklyData });
+  } catch (error) {
+    console.error("Analytics fetch error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch analytics data" });
   }
 };

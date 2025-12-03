@@ -8162,68 +8162,118 @@ function App() {
 
     // ----------------- LOGIN SCREEN -----------------
     if (!isAuthenticated) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
-                <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
-                <script src="https://cdn.tailwindcss.com"></script>
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 font-sans">
+            <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
+            <script src="https://cdn.tailwindcss.com"></script>
 
-                <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-200">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Lock className="text-blue-600" size={32} />
+            <div className="w-full max-w-md">
+                {/* Main Card */}
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    {/* Header Section with Logo */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="bg-white p-4 rounded-xl shadow-lg">
+                                <svg width="80" height="80" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M40 40 H90 Q120 40 120 70 Q120 85 105 92.5 Q120 100 120 115 Q120 145 90 145 H40 Z" fill="#0A2540"/>
+                                    <path d="M60 60 H80 Q95 60 95 75 Q95 90 80 90 H60 Z" fill="white"/>
+                                    <path d="M60 105 H85 Q100 105 100 122.5 Q100 140 85 140 H60 Z" fill="white"/>
+                                    <path d="M130 75 Q130 40 165 40 Q185 40 195 50 Q205 60 205 75 Q205 90 195 100 Q185 110 165 110 H145 V145 H130 Z" fill="#FFD700"/>
+                                    <path d="M145 55 H165 Q180 55 180 75 Q180 95 165 95 H145 Z" fill="white"/>
+                                </svg>
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800">Design Blocks Login</h2>
-                        <p className="text-gray-500 text-sm mt-2">Sign in to continue</p>
+                        <h1 className="text-3xl font-bold text-white mb-2">Design Blocks</h1>
+                        <p className="text-blue-100 text-sm">Welcome back! Please sign in to continue</p>
                     </div>
 
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <User className="text-gray-400" size={18} />
+                    {/* Form Section */}
+                    <div className="px-8 py-10">
+                        <div className="space-y-6">
+                            {/* Username Input */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Username
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <User className="text-gray-400" size={20} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
+                                        placeholder="Enter your username"
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    required
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg"
-                                    placeholder="Enter username"
-                                />
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="text-gray-400" size={18} />
+                            {/* Password Input */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Lock className="text-gray-400" size={20} />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
+                                        placeholder="Enter your password"
+                                    />
                                 </div>
-                                <input
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg"
-                                    placeholder="Enter password"
-                                />
                             </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={authLoading}
-                            className="w-full bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center"
-                        >
-                            {authLoading ? <Loader size={20} className="animate-spin mr-2" /> : "Sign In"}
-                        </button>
-                    </form>
+                            {/* Remember Me */}
+                            <div className="flex items-center justify-between text-sm">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
+                                </label>
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                                onClick={handleLogin}
+                                disabled={authLoading}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3.5 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                            >
+                                {authLoading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Signing in...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lock size={18} />
+                                        <span>Sign In</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Security Badge */}
+                <div className="mt-6 text-center">
+                    <p className="text-xs text-gray-500 flex items-center justify-center gap-2">
+                        <Lock size={14} />
+                        Secured by 256-bit encryption
+                    </p>
                 </div>
             </div>
-        );
-    }
-
+        </div>
+    );
+}
 
     // ----------------- ADMIN PANEL -----------------
     if (userRole === "admin") {

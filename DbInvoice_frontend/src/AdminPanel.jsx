@@ -2240,6 +2240,8 @@ import {
     Menu
 } from 'lucide-react';
 import ReactToPrint from "react-to-print";
+import AnalyticsDashboard from "./AnalyticsDashboard";
+
 
 // --- CONFIGURATION ---
 const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
@@ -2372,6 +2374,13 @@ function AdminPanel({ onLogout }) {
     const [saveLoading, setSaveLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
+    const [chartData, setChartData] = useState({
+        monthlyData: [],
+        weeklyData: [],
+        loading: false,
+        error: ""
+    });
+
 
 
     const [billDetails, setBillDetails] = useState({
@@ -2423,6 +2432,7 @@ function AdminPanel({ onLogout }) {
         showModal(message, 'ALERT');
     };
 
+
     // ----------------------------------------------------
     // --- 1. Data Fetching Logic (Admin Dashboard & Lists) - Keep Original ---
     // ----------------------------------------------------
@@ -2471,6 +2481,38 @@ function AdminPanel({ onLogout }) {
             setDashboardError("Unauthorized access. Token missing.");
         }
     }, [activeTab, fetchAdminData]);
+
+    const fetchAnalyticsData = useCallback(async (token) => {
+        setChartData(prev => ({ ...prev, loading: true, error: "" }));
+        try {
+            const response = await fetch(`${BASE_URL}/api/admin/analytics`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setChartData({
+                    monthlyData: data.monthlyData || [],
+                    weeklyData: data.weeklyData || [],
+                    loading: false,
+                    error: ""
+                });
+            } else {
+                setChartData(prev => ({ ...prev, loading: false, error: data.error || "Failed to load analytics" }));
+            }
+        } catch (err) {
+            setChartData(prev => ({ ...prev, loading: false, error: "Network error while fetching analytics" }));
+        }
+    }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (token && activeTab === "dashboard") {
+            fetchAnalyticsData(token);
+        }
+    }, [activeTab, fetchAnalyticsData]);
+
+
 
 
     // ----------------------------------------------------
@@ -2991,10 +3033,11 @@ function AdminPanel({ onLogout }) {
         });
     };
 
-    const handleSubmitPasswordChange = async (e) => {
+    const handleSubmitPasswordChange = async (e, isAdmin = false, targetUserId = null, targetUsername = null) => {
         e.preventDefault();
         const { oldPassword, newPassword, confirmNewPassword } = passwordForm;
 
+        // validations
         if (newPassword !== confirmNewPassword) {
             showNotification("New password and confirmation password do not match.", 'ALERT');
             return;
@@ -3011,17 +3054,37 @@ function AdminPanel({ onLogout }) {
         }
 
         setPasswordLoading(true);
+
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/change-user-password`, {
+            let url = "";
+            let body = {};
+
+            if (isAdmin) {
+                // Admin reset flow
+                url = `${BASE_URL}/api/admin/change-user-password`;
+                if (targetUserId) {
+                    body = { userId: targetUserId, newPassword };
+                } else if (targetUsername) {
+                    body = { username: targetUsername, newPassword };
+                } else {
+                    showNotification("Admin must provide userId or username.", 'ALERT');
+                    setPasswordLoading(false);
+                    return;
+                }
+            } else {
+                // Normal user flow
+                url = `${BASE_URL}/api/admin/change-user-password`;
+                body = { oldPassword, newPassword };
+            }
+
+            const response = await fetch(url, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ oldPassword, newPassword })
+                body: JSON.stringify(body)
             });
-
-
 
             const data = await response.json();
 
@@ -3042,6 +3105,7 @@ function AdminPanel({ onLogout }) {
             setPasswordLoading(false);
         }
     };
+
 
     // ----------------------------------------------------
     // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
@@ -3104,6 +3168,17 @@ function AdminPanel({ onLogout }) {
                     </button>
                 </div>
             </div>
+            {/* Analytics Charts */}
+            <div className="mt-10">
+                {chartData.loading ? (
+                    <p className="text-center text-gray-500">Loading analytics...</p>
+                ) : chartData.error ? (
+                    <p className="text-center text-red-500">{chartData.error}</p>
+                ) : (
+                    <AnalyticsDashboard chartData={chartData} />
+                )}
+            </div>
+
         </div>
     );
 

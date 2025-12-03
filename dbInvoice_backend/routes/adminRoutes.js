@@ -144,7 +144,7 @@ router.post("/login", adminController.login);
 router.get("/invoices", verifyToken, authorizeRole("admin"), invoiceController.fetchAllInvoices);
 router.get("/quotations", verifyToken, authorizeRole("admin"), quotationController.fetchAllQuotations);
 router.put("/change-user-password", verifyToken, authorizeRole("admin"), adminController.changePassword);
-
+router.get("/analytics", adminController.verifyToken, adminController.analytics);
 module.exports = router;
 
 
