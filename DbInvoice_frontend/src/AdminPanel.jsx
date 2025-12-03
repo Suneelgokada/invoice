@@ -3285,7 +3285,7 @@ const renderDataList = (type) => {
                                                     {/* DELETE BUTTON - FIXED */}
                                                     <button
                                                         onClick={() =>
-                                                            handleDeleteAdmin(
+                                                            handleDeleteForm(
                                                                 isInvoice ? "Invoice" : "Quotation",
                                                                 number
                                                             )
