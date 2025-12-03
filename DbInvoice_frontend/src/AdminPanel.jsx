@@ -3269,24 +3269,29 @@ const renderDataList = (type) => {
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex gap-2 justify-center">
 
-                                                    {/* EDIT BUTTON - FIXED */}
+                                                    {/* EDIT FIXED */}
                                                     <button
                                                         onClick={() => {
+                                                            // Set correct mode before opening new bill
                                                             setActiveTab("newBill");
                                                             setInvoice(isInvoice);
                                                             setQuotation(!isInvoice);
-                                                            setTimeout(() => handleSearch(number), 100); // important fix
+
+                                                            // Load exact document type
+                                                            setTimeout(() => {
+                                                                handleSearch(number);
+                                                            }, 150);
                                                         }}
                                                         className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
                                                     >
                                                         <Edit size={14} /> Edit
                                                     </button>
 
-                                                    {/* DELETE BUTTON - FIXED */}
+                                                    {/* DELETE FIXED */}
                                                     <button
                                                         onClick={() =>
-                                                            handleDeleteForm(
-                                                                isInvoice ? "Invoice" : "Quotation",
+                                                            handleDeleteAdmin(
+                                                                isInvoice ? "invoice" : "quotation",
                                                                 number
                                                             )
                                                         }
@@ -3307,6 +3312,7 @@ const renderDataList = (type) => {
         </div>
     );
 };
+
 
 
 
