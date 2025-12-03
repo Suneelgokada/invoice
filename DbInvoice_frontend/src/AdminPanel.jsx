@@ -3182,10 +3182,14 @@ function AdminPanel({ onLogout }) {
         </div>
     );
 
-    const renderDataList = (type) => (
+const renderDataList = (type) => {
+    const isInvoice = type === "invoices";
+
+    return (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">
-                <ClipboardList size={28} className="inline mr-2 text-indigo-600" /> {type === 'invoices' ? "Invoices" : "Quotations"} List
+                <ClipboardList size={28} className="inline mr-2 text-indigo-600" /> 
+                {isInvoice ? "Invoices" : "Quotations"} List
             </h2>
 
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -3197,10 +3201,14 @@ function AdminPanel({ onLogout }) {
                 ) : adminListData.length === 0 ? (
                     <div className="text-center py-20 bg-gray-50">
                         <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-indigo-200">
-                            {type === 'invoices' ? (<Receipt className="text-indigo-400" size={40} />) : (<FileText className="text-indigo-400" size={40} />)}
+                            {isInvoice ? (
+                                <Receipt className="text-indigo-400" size={40} />
+                            ) : (
+                                <FileText className="text-indigo-400" size={40} />
+                            )}
                         </div>
                         <p className="text-gray-600 font-bold text-xl">
-                            No {type} found
+                            No {isInvoice ? "Invoices" : "Quotations"} found
                         </p>
                     </div>
                 ) : (
@@ -3217,70 +3225,80 @@ function AdminPanel({ onLogout }) {
                                     <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
+
                             <tbody className="bg-white divide-y divide-gray-100">
-                                {adminListData.map((item) => (
-                                    <tr
-                                        key={item.invoiceNumber || item.quotationNumber}
-                                        className="hover:bg-indigo-50 transition duration-150"
-                                    >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-3 py-1 bg-indigo-700 text-white text-sm font-bold rounded-full">
-                                                {item.invoiceNumber || item.quotationNumber}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900">{item.billTO}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-600 max-w-xs truncate">{item.customerAddress}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-mono text-gray-700">{item.customerGSTIN || 'N/A'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right whitespace-nowrap">
-                                            {editItem &&
-                                                (editItem.invoiceNumber === item.invoiceNumber ||
-                                                    editItem.quotationNumber === item.quotationNumber) ? (
-                                                <input
-                                                    type="number"
-                                                    value={editValue}
-                                                    min="0"
-                                                    step="0.01"
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    className="w-28 border-2 border-indigo-300 rounded-lg px-3 py-1 text-sm focus:border-indigo-500 transition"
-                                                    placeholder="New Value"
-                                                />
-                                            ) : (
-                                                <span className="text-sm font-bold text-green-600">
-                                                    {/* Check which value field to display */}
-                                                    ₹{(item.invoiceValue !== undefined ? item.invoiceValue : item.quotationValue || 0).toFixed(2)}
+                                {adminListData.map((item) => {
+                                    const number = item.invoiceNumber || item.quotationNumber;
+                                    const value =
+                                        item.invoiceValue !== undefined
+                                            ? item.invoiceValue
+                                            : item.quotationValue || 0;
+
+                                    return (
+                                        <tr key={number} className="hover:bg-indigo-50 transition duration-150">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-3 py-1 bg-indigo-700 text-white text-sm font-bold rounded-full">
+                                                    {number}
                                                 </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-center whitespace-nowrap">
-                                            <span className="text-xs text-gray-500">
-                                                {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center whitespace-nowrap">
-                                            <div className="flex gap-2 justify-center">
-                                                {editItem &&
-                                                    (editItem.invoiceNumber === item.invoiceNumber ||
-                                                        editItem.quotationNumber === item.quotationNumber) ? (
-                                                    <>
-                                                        <button onClick={saveEditAdmin} disabled={dashboardLoading} className="bg-green-600 text-white px-3 py-1 rounded-lg shadow-md hover:bg-green-700 text-sm font-medium transition disabled:opacity-50">Save</button>
-                                                        <button onClick={() => { setEditItem(null); setEditValue(''); }} disabled={dashboardLoading} className="bg-gray-400 text-white px-3 py-1 rounded-lg shadow-md hover:bg-gray-500 text-sm font-medium transition disabled:opacity-50">Cancel</button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button onClick={() => handleEditAdmin(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 font-medium transition"><Edit size={14} /> Edit</button>
-                                                        <button onClick={() => handleDeleteAdmin(type === 'invoices' ? 'invoice' : 'quotation', item.invoiceNumber || item.quotationNumber)} className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 font-medium transition"><Trash2 size={14} /> Delete</button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                {item.billTO}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                                {item.customerAddress}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm font-mono text-gray-700">
+                                                {item.customerGSTIN || "N/A"}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-right text-sm font-bold text-green-600">
+                                                ₹{value.toFixed(2)}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-center text-xs text-gray-500">
+                                                {new Date(item.createdAt).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "short",
+                                                    year: "numeric",
+                                                })}
+                                            </td>
+
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex gap-2 justify-center">
+
+                                                    {/* EDIT BUTTON */}
+                                                    <button
+                                                        onClick={() => {
+                                                            setActiveTab("newBill");
+                                                            setInvoice(isInvoice);
+                                                            setQuotation(!isInvoice);
+                                                            handleSearch(number);
+                                                        }}
+                                                        className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
+                                                    >
+                                                        <Edit size={14} /> Edit
+                                                    </button>
+
+                                                    {/* DELETE BUTTON */}
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDeleteAdmin(
+                                                                isInvoice ? "invoice" : "quotation",
+                                                                number
+                                                            )
+                                                        }
+                                                        className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 transition"
+                                                    >
+                                                        <Trash2 size={14} /> Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -3288,6 +3306,8 @@ function AdminPanel({ onLogout }) {
             </div>
         </div>
     );
+};
+
 
     const renderChangePassword = () => (
         <div className="max-w-7xl mx-auto px-6 py-8">
