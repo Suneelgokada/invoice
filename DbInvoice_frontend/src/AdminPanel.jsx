@@ -3182,137 +3182,133 @@ function AdminPanel({ onLogout }) {
         </div>
     );
 
-const renderDataList = (type) => {
-    const isInvoice = type === "invoices";
+    const renderDataList = (type) => {
+        const isInvoice = type === "invoices";
 
-    return (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">
-                <ClipboardList size={28} className="inline mr-2 text-indigo-600" />
-                {isInvoice ? "Invoices" : "Quotations"} List
-            </h2>
+        return (
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <h2 className="text-3xl font-bold text-gray-800 mb-6">
+                    <ClipboardList size={28} className="inline mr-2 text-indigo-600" />
+                    {isInvoice ? "Invoices" : "Quotations"} List
+                </h2>
 
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                {dashboardLoading ? (
-                    <div className="text-center py-20">
-                        <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
-                        <p className="text-gray-600 font-medium">Loading data...</p>
-                    </div>
-                ) : adminListData.length === 0 ? (
-                    <div className="text-center py-20 bg-gray-50">
-                        <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-indigo-200">
-                            {isInvoice ? (
-                                <Receipt className="text-indigo-400" size={40} />
-                            ) : (
-                                <FileText className="text-indigo-400" size={40} />
-                            )}
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    {dashboardLoading ? (
+                        <div className="text-center py-20">
+                            <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
+                            <p className="text-gray-600 font-medium">Loading data...</p>
                         </div>
-                        <p className="text-gray-600 font-bold text-xl">
-                            No {isInvoice ? "Invoices" : "Quotations"} found
-                        </p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-indigo-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Number</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Bill To</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Address</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">GSTIN</th>
-                                    <th className="px-6 py-3 text-right text-xs font-bold text-indigo-700 uppercase tracking-wider">Value</th>
-                                    <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Date</th>
-                                    <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
+                    ) : adminListData.length === 0 ? (
+                        <div className="text-center py-20 bg-gray-50">
+                            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-indigo-200">
+                                {isInvoice ? (
+                                    <Receipt className="text-indigo-400" size={40} />
+                                ) : (
+                                    <FileText className="text-indigo-400" size={40} />
+                                )}
+                            </div>
+                            <p className="text-gray-600 font-bold text-xl">
+                                No {isInvoice ? "Invoices" : "Quotations"} found
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-indigo-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Number</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Bill To</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">Address</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">GSTIN</th>
+                                        <th className="px-6 py-3 text-right text-xs font-bold text-indigo-700 uppercase tracking-wider">Value</th>
+                                        <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-3 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
 
-                            <tbody className="bg-white divide-y divide-gray-100">
-                                {adminListData.map((item) => {
-                                    const number = item.invoiceNumber || item.quotationNumber;
-                                    const value =
-                                        item.invoiceValue !== undefined
-                                            ? item.invoiceValue
-                                            : item.quotationValue || 0;
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {adminListData.map((item) => {
+                                        const number = item.invoiceNumber || item.quotationNumber;
+                                        const value =
+                                            item.invoiceValue !== undefined
+                                                ? item.invoiceValue
+                                                : item.quotationValue || 0;
 
-                                    return (
-                                        <tr key={number} className="hover:bg-indigo-50 transition duration-150">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-3 py-1 bg-indigo-700 text-white text-sm font-bold rounded-full">
-                                                    {number}
-                                                </span>
-                                            </td>
+                                        return (
+                                            <tr key={number} className="hover:bg-indigo-50 transition duration-150">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="px-3 py-1 bg-indigo-700 text-white text-sm font-bold rounded-full">
+                                                        {number}
+                                                    </span>
+                                                </td>
 
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {item.billTO}
-                                            </td>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                    {item.billTO}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                                {item.customerAddress}
-                                            </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                                    {item.customerAddress}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-sm font-mono text-gray-700">
-                                                {item.customerGSTIN || "N/A"}
-                                            </td>
+                                                <td className="px-6 py-4 text-sm font-mono text-gray-700">
+                                                    {item.customerGSTIN || "N/A"}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-right text-sm font-bold text-green-600">
-                                                ₹{value.toFixed(2)}
-                                            </td>
+                                                <td className="px-6 py-4 text-right text-sm font-bold text-green-600">
+                                                    ₹{value.toFixed(2)}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-center text-xs text-gray-500">
-                                                {new Date(item.createdAt).toLocaleDateString("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "short",
-                                                    year: "numeric",
-                                                })}
-                                            </td>
+                                                <td className="px-6 py-4 text-center text-xs text-gray-500">
+                                                    {new Date(item.createdAt).toLocaleDateString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "short",
+                                                        year: "numeric",
+                                                    })}
+                                                </td>
 
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex gap-2 justify-center">
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex gap-2 justify-center">
 
-                                                    {/* EDIT FIXED */}
-                                                    <button
-                                                        onClick={() => {
-                                                            // Set correct mode before opening new bill
-                                                            setActiveTab("newBill");
-                                                            setInvoice(isInvoice);
-                                                            setQuotation(!isInvoice);
+                                                        {/* EDIT BUTTON - FIXED */}
+                                                        <button
+                                                            onClick={() => {
+                                                                setActiveTab("newBill");
+                                                                setInvoice(isInvoice);
+                                                                setQuotation(!isInvoice);
+                                                                setTimeout(() => handleSearch(number, isInvoice ? "invoice" : "quotation"), 120);
+                                                            }}
+                                                            className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
+                                                        >
+                                                            <Edit size={14} /> Edit
+                                                        </button>
 
-                                                            // Load exact document type
-                                                            setTimeout(() => {
-                                                                handleSearch(number);
-                                                            }, 150);
-                                                        }}
-                                                        className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
-                                                    >
-                                                        <Edit size={14} /> Edit
-                                                    </button>
 
-                                                    {/* DELETE FIXED */}
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDeleteAdmin(
-                                                                isInvoice ? "invoice" : "quotation",
-                                                                number
-                                                            )
-                                                        }
-                                                        className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 transition"
-                                                    >
-                                                        <Trash2 size={14} /> Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                                        {/* DELETE BUTTON - FIXED */}
+                                                        <button
+                                                            onClick={() => {
+                                                                handleDeleteAdmin(
+                                                                    isInvoice ? "invoice" : "quotation",
+                                                                    number
+                                                                );
+                                                            }}
+                                                            className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 transition"
+                                                        >
+                                                            <Trash2 size={14} /> Delete
+                                                        </button>
+
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
-};
-
+        );
+    };
 
 
 
