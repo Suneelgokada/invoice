@@ -150,6 +150,13 @@ router.delete("/quotation/:number", verifyToken, authorizeRole("admin"), quotati
 router.get("/invoice/fetch/:number", verifyToken, authorizeRole("admin"), invoiceController.fetchInvoiceByNumber);
 router.get("/quotation/fetch/:number", verifyToken, authorizeRole("admin"), quotationController.fetchQuotationByNumber);
 
+router.get("/invoice/generate", verifyToken, authorizeRole("admin"), invoiceController.generateInvoiceNumber);
+router.post("/invoice/save", verifyToken, authorizeRole("admin"), invoiceController.saveInvoice);
+router.get("/update", verifyToken, authorizeRole("admin"), invoiceController.updateInvoice);
+
+router.get("/quotation/generate", verifyToken, authorizeRole("admin"), quotationController.generateQuotationNumber);
+router.post("/quotation/save", verifyToken, authorizeRole("admin"), quotationController.saveQuotation);
+router.get("/quotation/update", verifyToken, authorizeRole("admin"), quotationController.updateQuotation);
 
 module.exports = router;
 
