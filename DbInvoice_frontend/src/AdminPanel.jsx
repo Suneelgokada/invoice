@@ -2853,168 +2853,169 @@ function AdminPanel({ onLogout }) {
     // --- handleSearch function (Around line 522) ---
 
     // Fetch invoice/quotation by number (FROM App.jsx)
-    const handleSearch = async (docNumber) => {
-        // ... (existing code for searchNumber check)
+const handleSearch = async (docNumber) => {
 
-        if (typeof docNumber === 'object' || !docNumber) {
-            docNumber = searchNumber;
-        }
+    if (typeof docNumber === 'object' || !docNumber) {
+        docNumber = searchNumber;
+    }
 
-        if (!docNumber) {
-            showNotification("Please enter a document number to search.", 'info');
+    if (!docNumber) {
+        showNotification("Please enter a document number to search.", 'info');
+        return;
+    }
+
+    // --- AUTO MODE SET ---
+    if (docNumber.startsWith("Q") || docNumber.startsWith("q")) {
+        setQuotation(true);
+        setInvoice(false);
+    } else {
+        setQuotation(false);
+        setInvoice(true);
+    }
+
+    try {
+        setFormLoading(true);
+        setIsEditing(false);
+
+        const token = localStorage.getItem("authToken");
+
+        // =============================
+        // 1️⃣ TRY FETCHING QUOTATION
+        // =============================
+        const quoteURL = `${BASE_URL}/api/admin/quotation/fetch/${docNumber}`;
+
+        let response = await fetch(quoteURL, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        let result = await response.json();
+
+        if (response.ok && result.quotation) {
+
+            const q = result.quotation;
+
+            setBillDetails(prev => ({
+                ...prev,
+                billTO: q.billTO,
+                customerAddress: q.customerAddress,
+                customerGSTIN: q.customerGSTIN,
+                items: q.items,
+                quotationNumber: q.quotationNumber,
+                associatedQuotationNumber: "",
+                documentDate: q.documentDate || new Date().toISOString().split("T")[0]
+            }));
+
+            setSGST(q.sgst);
+            setCGST(q.cgst);
+            setIsEditing(true);
+
+            showNotification(`Quotation #${docNumber} loaded for editing.`, 'success');
             return;
         }
 
-        try {
-            setFormLoading(true);
-            setIsEditing(false);
-            const token = localStorage.getItem('authToken');
+        // =============================
+        // 2️⃣ TRY FETCHING INVOICE
+        // =============================
+        const invoiceURL = `${BASE_URL}/api/admin/invoice/fetch/${docNumber}`;
 
-            // --- 1. Try fetching Quotation (Always try first to check if the number is a Quote) ---
-            const quoteUrl = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
-            let response = await fetch(quoteUrl, { headers: { "Authorization": `Bearer ${token}` } });
-            let result = await response.json();
+        response = await fetch(invoiceURL, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        result = await response.json();
 
-            if (response.ok && result.quotation) {
-                // ... (Quotation found logic - NO CHANGE)
-                const quote = result.quotation;
+        if (response.ok && result.invoice) {
 
-                const fetchedDate = quote.documentDate
-                    ? quote.documentDate
-                    : new Date().toISOString().split("T")[0];
+            const inv = result.invoice;
 
-                setBillDetails(prev => ({
-                    ...prev,
-                    billTO: quote.billTO || "",
-                    customerAddress: quote.customerAddress || "",
-                    customerGSTIN: quote.customerGSTIN || "",
-                    items: quote.items || [],
-                    associatedQuotationNumber: docNumber,
-                    documentDate: fetchedDate,
-                }));
-                setSGST(quote.sgst || false);
-                setCGST(quote.cgst || false);
-                setOriginalQuotationNumber(quote.quotationNumber);
+            setBillDetails(prev => ({
+                ...prev,
+                billTO: inv.billTO,
+                customerAddress: inv.customerAddress,
+                customerGSTIN: inv.customerGSTIN,
+                quotationNumber: inv.invoiceNumber,
+                items: inv.items,
+                associatedQuotationNumber: inv.originalQuotationNumber || "",
+                documentDate: inv.documentDate || new Date().toISOString().split("T")[0]
+            }));
 
-                // Check the *current* mode of the form to decide the action
-                if (invoice) {
-                    // Current mode is Invoice: Use Quote data to create a new Invoice
-                    setIsEditing(false);
-                    generateUniqueNumber(); // Generate a new invoice number
-                    setBillDetails(prev => ({ ...prev, associatedQuotationNumber: docNumber }));
-                    showNotification(`Quotation #${docNumber} details loaded. Ready to create Invoice #${billDetails.quotationNumber}.`, 'success');
-                } else {
-                    // Current mode is Quotation: Edit the fetched Quotation
-                    setBillDetails(prev => ({ ...prev, quotationNumber: quote.quotationNumber, associatedQuotationNumber: "" }));
-                    setIsEditing(true);
-                    showNotification(`Quotation #${docNumber} details loaded for editing.`, 'success');
-                }
-                return;
-            }
+            setSGST(inv.sgst);
+            setCGST(inv.cgst);
+            setIsEditing(true);
+            setInvoice(true);
+            setQuotation(false);
 
-            // --- 2. Try fetching Invoice (Only if Quotation not found, or if explicitly in Invoice mode) ---
-            // If the document number is not a quotation, try to fetch it as an invoice.
-            const invoiceUrl = `${BASE_URL}/api/invoice/fetch/${docNumber}`;
-            response = await fetch(invoiceUrl, { headers: { "Authorization": `Bearer ${token}` } });
-            result = await response.json();
-
-            if (response.ok && result.invoice) {
-                // ... (Invoice found logic - NO CHANGE)
-                const inv = result.invoice;
-
-                const fetchedDate = inv.documentDate
-                    ? inv.documentDate
-                    : new Date().toISOString().split("T")[0];
-
-                setBillDetails(prev => ({
-                    ...prev,
-                    billTO: inv.billTO || "",
-                    customerAddress: inv.customerAddress || "",
-                    customerGSTIN: inv.customerGSTIN || "",
-                    // Use the invoice number as the primary number for the form
-                    quotationNumber: inv.invoiceNumber,
-                    items: inv.items || [],
-                    documentDate: fetchedDate,
-                    associatedQuotationNumber: inv.originalQuotationNumber || '',
-                }));
-                setSGST(inv.sgst || false);
-                setCGST(inv.cgst || false);
-                setOriginalQuotationNumber(inv.originalQuotationNumber || null);
-
-                // Crucial step: Ensure the form is set to the correct mode and editing state
-                setInvoice(true);
-                setQuotation(false);
-                setIsEditing(true);
-                showNotification(`Invoice #${docNumber} details loaded for editing.`, 'success');
-                return;
-            }
-
-            // --- 3. If neither found ---
-            setIsEditing(false);
-            setBillDetails(prev => ({ ...prev, associatedQuotationNumber: "", documentDate: new Date().toISOString().split("T")[0] }));
-            generateUniqueNumber();
-            showNotification(`Document #${docNumber} not found.`, 'error');
-
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            showNotification('Error fetching data. Check server connection.', 'error');
-        } finally {
-            setFormLoading(false);
+            showNotification(`Invoice #${docNumber} loaded for editing.`, 'success');
+            return;
         }
-    };
+
+        // =============================
+        // 3️⃣ NOT FOUND
+        // =============================
+        showNotification(`Document #${docNumber} not found`, 'error');
+        generateUniqueNumber();
+
+    } catch (error) {
+        console.error(error);
+        showNotification("Error fetching document", "error");
+
+    } finally {
+        setFormLoading(false);
+    }
+};
+
+
     // ----------------------------------------------------
     // --- END Billing Form Logic ---
     // ----------------------------------------------------
 
     // --- Admin List Handlers (Keep Original) ---
 
-  const performDeleteAdmin = async (type, number, token) => {
-    setDashboardLoading(true);
+    const performDeleteAdmin = async (type, number, token) => {
+        setDashboardLoading(true);
 
-    try {
-        const url = `${BASE_URL}/api/admin/${type}/${number}`;
+        try {
+            const url = `${BASE_URL}/api/admin/${type}/${number}`;
 
-        const response = await fetch(url, {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        });
+            const response = await fetch(url, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok && data.success) {
-            showModal(`${type} #${number} deleted successfully`, "ALERT");
+            if (response.ok && data.success) {
+                showModal(`${type} #${number} deleted successfully`, "ALERT");
 
-            // refresh list
-            fetchAdminData(token);
-        } else {
-            showModal(data.error || "Failed to delete document", "ALERT");
+                // refresh list
+                fetchAdminData(token);
+            } else {
+                showModal(data.error || "Failed to delete document", "ALERT");
+            }
+        } catch (err) {
+            console.error("Delete error:", err);
+            showModal("Network error. Could not reach server", "ALERT");
+        } finally {
+            setDashboardLoading(false);
         }
-    } catch (err) {
-        console.error("Delete error:", err);
-        showModal("Network error. Could not reach server", "ALERT");
-    } finally {
-        setDashboardLoading(false);
-    }
-};
+    };
 
 
-   const handleDeleteAdmin = (type, number) => {
-    const token = localStorage.getItem("authToken");
+    const handleDeleteAdmin = (type, number) => {
+        const token = localStorage.getItem("authToken");
 
-    if (!token) {
-        showModal("Token missing. Please login again.", "ALERT");
-        return;
-    }
+        if (!token) {
+            showModal("Token missing. Please login again.", "ALERT");
+            return;
+        }
 
-    showModal(
-        `Are you sure you want to delete ${type} #${number}?`,
-        "CONFIRM",
-        () => performDeleteAdmin(type, number, token)
-    );
-};
+        showModal(
+            `Are you sure you want to delete ${type} #${number}?`,
+            "CONFIRM",
+            () => performDeleteAdmin(type, number, token)
+        );
+    };
 
 
     const handleEditAdmin = (item) => {
@@ -3308,24 +3309,35 @@ function AdminPanel({ onLogout }) {
 
                                                         <button
                                                             onClick={() => {
+                                                                // Step 1: switch to form page
                                                                 setActiveTab("newBill");
-                                                                // Set the mode based on the list being viewed
-                                                                setInvoice(isInvoice);
-                                                                setQuotation(!isInvoice);
-                                                                // Pass the document number and document type (implicit in the isInvoice state)
-                                                                setTimeout(() => handleSearch(number), 120);
+
+                                                                // Step 2: set mode correctly
+                                                                if (isInvoice) {
+                                                                    setInvoice(true);
+                                                                    setQuotation(false);
+                                                                } else {
+                                                                    setInvoice(false);
+                                                                    setQuotation(true);
+                                                                }
+
+                                                                // Step 3: wait for form reset to finish (VERY IMPORTANT)
+                                                                setTimeout(() => {
+                                                                    handleSearch(number);
+                                                                }, 400); // 400ms = stable, avoids race conditions
                                                             }}
                                                             className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
                                                         >
                                                             <Edit size={14} /> Edit
                                                         </button>
 
+
                                                         {/* DELETE BUTTON - FIXED */}
                                                         <button
                                                             onClick={() => {
                                                                 handleDeleteAdmin(
                                                                     isInvoice ? "invoice" : "quotation",
-                                                                    number                                
+                                                                    number
                                                                 );
                                                             }}
                                                             className="bg-red-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-red-600 text-sm flex items-center gap-1 transition"
