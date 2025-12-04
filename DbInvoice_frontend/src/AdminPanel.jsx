@@ -2864,34 +2864,24 @@ const handleSearch = async (docNumber) => {
         return;
     }
 
-    // --- AUTO MODE SET ---
-    if (docNumber.startsWith("Q") || docNumber.startsWith("q")) {
-        setQuotation(true);
-        setInvoice(false);
-    } else {
-        setQuotation(false);
-        setInvoice(true);
-    }
-
     try {
         setFormLoading(true);
         setIsEditing(false);
 
         const token = localStorage.getItem("authToken");
 
-        // =============================
-        // 1️⃣ TRY FETCHING QUOTATION
-        // =============================
+        // 1️⃣ FETCH QUOTATION
         const quoteURL = `${BASE_URL}/api/admin/quotation/fetch/${docNumber}`;
-
         let response = await fetch(quoteURL, {
             headers: { Authorization: `Bearer ${token}` }
         });
         let result = await response.json();
 
         if (response.ok && result.quotation) {
-
             const q = result.quotation;
+
+            setQuotation(true);
+            setInvoice(false);
 
             setBillDetails(prev => ({
                 ...prev,
@@ -2912,19 +2902,18 @@ const handleSearch = async (docNumber) => {
             return;
         }
 
-        // =============================
-        // 2️⃣ TRY FETCHING INVOICE
-        // =============================
+        // 2️⃣ FETCH INVOICE
         const invoiceURL = `${BASE_URL}/api/admin/invoice/fetch/${docNumber}`;
-
         response = await fetch(invoiceURL, {
             headers: { Authorization: `Bearer ${token}` }
         });
         result = await response.json();
 
         if (response.ok && result.invoice) {
-
             const inv = result.invoice;
+
+            setInvoice(true);
+            setQuotation(false);
 
             setBillDetails(prev => ({
                 ...prev,
@@ -2940,27 +2929,23 @@ const handleSearch = async (docNumber) => {
             setSGST(inv.sgst);
             setCGST(inv.cgst);
             setIsEditing(true);
-            setInvoice(true);
-            setQuotation(false);
 
             showNotification(`Invoice #${docNumber} loaded for editing.`, 'success');
             return;
         }
 
-        // =============================
         // 3️⃣ NOT FOUND
-        // =============================
         showNotification(`Document #${docNumber} not found`, 'error');
         generateUniqueNumber();
 
     } catch (error) {
         console.error(error);
         showNotification("Error fetching document", "error");
-
     } finally {
         setFormLoading(false);
     }
 };
+
 
 
     // ----------------------------------------------------
