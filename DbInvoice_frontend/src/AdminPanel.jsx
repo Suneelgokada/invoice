@@ -4725,7 +4725,65 @@ function AdminPanel({ onLogout }) {
         // If nothing was loaded, the specific fetch functions will handle showing the 'Not Found' notification
     };
 
+    // 4. Special Function to load Quotation details into Invoice Form 
+    const loadQuotationForInvoice = async (docNumber) => {
+        if (!docNumber) {
+            showNotification("Please enter a Quotation Ref number.", "info");
+            return;
+        }
+        setFormLoading(true);
+        // Note: We deliberately KEEP invoice=true and quotation=false mode here
 
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) { showNotification("Authentication token missing.", "ALERT"); return; }
+
+            const quoteURL = `${BASE_URL}/api/admin/quotation/fetch/${docNumber}`;
+
+            const response = await fetch(quoteURL, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const result = await response.json();
+
+            if (response.ok && result.quotation) {
+                const q = result.quotation;
+
+                // Normalize items and date
+                const normalizedItems = q.items.map(i => ({
+                    description: i.description,
+                    quantity: Number(i.quantity),
+                    unitPrice: Number(i.unitPrice),
+                    id: i._id || Date.now() + Math.random()
+                }));
+
+                // ⚠️ IMPORTANT: Load data but RETAIN the current Invoice Number (billDetails.quotationNumber)
+                setBillDetails(prev => ({
+                    ...prev,
+                    billTO: q.billTO,
+                    customerAddress: q.customerAddress,
+                    customerGSTIN: q.customerGSTIN,
+                    items: normalizedItems,
+                    // Do NOT overwrite the current invoiceNumber (which is stored in quotationNumber state)
+                    associatedQuotationNumber: q.quotationNumber, // Set the associated Q-number
+                    documentDate: (q.documentDate && q.documentDate.split("T")[0]) || new Date().toISOString().split("T")[0]
+                }));
+
+                setSGST(q.sgst || false);
+                setCGST(q.cgst || false);
+                setIsEditing(false); // Since we are creating a new invoice based on an old quote, it's NOT editing the invoice yet.
+
+                showNotification(`Quotation #${docNumber} details successfully loaded into Invoice.`, "success");
+
+            } else {
+                showNotification(`Quotation #${docNumber} not found.`, "error");
+            }
+        } catch (error) {
+            console.error(error);
+            showNotification("Error loading quotation for invoice.", "error");
+        } finally {
+            setFormLoading(false);
+        }
+    };
 
 
     // ----------------------------------------------------
@@ -5217,7 +5275,8 @@ function AdminPanel({ onLogout }) {
                                 onChange={(e) => setSearchNumber(e.target.value)}
                             />
                             <button
-                                onClick={() => handleSearch(searchNumber)}
+                                // ⭐ UPDATED FUNCTIONALITY: Using the priority/fallback search handler
+                                onClick={() => handleSearchOrLoad(searchNumber)}
                                 disabled={formLoading}
                                 className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600 disabled:opacity-50 font-medium whitespace-nowrap"
                             >
@@ -5277,7 +5336,9 @@ function AdminPanel({ onLogout }) {
                                             onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })}
                                         />
                                         <button
-                                            onClick={() => handleSearch(billDetails.associatedQuotationNumber)}
+                                            // ⭐ FINAL FIX: Using the dedicated function 'loadQuotationForInvoice' 
+                                            // This function loads the data but maintains the 'invoice' mode.
+                                            onClick={() => loadQuotationForInvoice(billDetails.associatedQuotationNumber)}
                                             disabled={formLoading}
                                             className="bg-blue-500 text-white px-3 py-2 rounded-r-lg h-full hover:bg-blue-600 disabled:opacity-50"
                                         >
