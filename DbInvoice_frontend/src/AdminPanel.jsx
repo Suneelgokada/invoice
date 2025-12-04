@@ -4344,7 +4344,7 @@ function AdminPanel({ onLogout }) {
             const documentNumber = billDetails.quotationNumber;
             const docKey = invoice ? "invoiceNumber" : "quotationNumber";
             const valueKey = invoice ? "invoiceValue" : "quotationValue";
-            
+
             // ⭐ UPDATED API URL: /api/invoice/update or /api/quotation/update
             const urlPath = invoice ? "invoice/update" : "quotation/update";
             const url = `${BASE_URL}/api/admin/${urlPath}`; // Router code has /api/admin prefix for this route: router.get("/update", verifyToken, authorizeRole("admin"), invoiceController.updateInvoice);
@@ -4386,7 +4386,7 @@ function AdminPanel({ onLogout }) {
             setFormLoading(false);
         }
     };
-    
+
     // Fallback function for deletion to wrap around performActualDeleteForm
     const handleDeleteForm = () => {
         const docType = invoice ? "Invoice" : "Quotation";
@@ -4533,7 +4533,7 @@ function AdminPanel({ onLogout }) {
                 // ఇది పైన billDetails క్లియర్ అయిన తర్వాత కొత్త నంబర్‌ను సెట్ చేస్తుంది.
                 // NOTE: generateUniqueNumber relies on the current `quotation` state, which is correct.
                 // It will generate a new number for the document type currently selected (invoice or quotation).
-                generateUniqueNumber(); 
+                generateUniqueNumber();
 
                 // 4. డాష్‌బోర్డ్ లిస్ట్‌ను రిఫ్రెష్ చేస్తుంది
                 fetchAdminData(token);
@@ -4555,47 +4555,48 @@ function AdminPanel({ onLogout }) {
     // --- handleSearch function (Around line 522) ---
 
     // Fetch invoice/quotation by number (FROM App.jsx)
-    const handleSearch = async (docNumber) => {
+    // ... (Previous code remains the same up to here)
 
-        if (typeof docNumber === "object" || !docNumber) {
-            docNumber = searchNumber;
-        }
+    // ----------------------------------------------------
+    // --- NEW/UPDATED 2. Billing Form Logic ---
+    // ----------------------------------------------------
 
+    // ... (Your existing calculation effects, handleAddItem, handleUpdateItem, etc. remain here)
+
+
+    // 1. Function to fetch QUOTATION only (Used when Q-Mode is selected or loading from Quotation List)
+    const fetchQuotationByNumber = async (docNumber) => {
         if (!docNumber) {
-            showNotification("Please enter a document number to search.", "info");
-            return;
+            showNotification("Please enter a Quotation number.", "info");
+            return false;
         }
+        setFormLoading(true);
+        setIsEditing(false);
+        setQuotation(true); // Explicitly set mode
+        setInvoice(false);
 
         try {
-            setFormLoading(true);
-            setIsEditing(false);
-
             const token = localStorage.getItem("authToken");
+            if (!token) { showNotification("Authentication token missing.", "ALERT"); return false; }
 
-            // -----------------------------------------------------
-            // 1️⃣ TRY FETCHING QUOTATION (ADMIN ROUTE)
-            // -----------------------------------------------------
-            // ⭐ UPDATED API URL: /api/admin/quotation/fetch/:number
+            // ⭐ ADMIN ROUTE: /api/admin/quotation/fetch/:number
             const quoteURL = `${BASE_URL}/api/admin/quotation/fetch/${docNumber}`;
 
-            let response = await fetch(quoteURL, {
+            const response = await fetch(quoteURL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            let result = await response.json();
+            const result = await response.json();
 
             if (response.ok && result.quotation) {
                 const q = result.quotation;
 
-                // 🔥 FIX: Normalize items to avoid React crashes
+                // Normalize items and date
                 const normalizedItems = q.items.map(i => ({
                     description: i.description,
                     quantity: Number(i.quantity),
                     unitPrice: Number(i.unitPrice),
                     id: i._id || Date.now() + Math.random()
                 }));
-
-                setQuotation(true);
-                setInvoice(false);
 
                 setBillDetails(prev => ({
                     ...prev,
@@ -4605,32 +4606,56 @@ function AdminPanel({ onLogout }) {
                     items: normalizedItems,
                     quotationNumber: q.quotationNumber,
                     associatedQuotationNumber: "",
-                    documentDate: q.documentDate.split("T")[0] || new Date().toISOString().split("T")[0] // Added split to ensure date format
+                    documentDate: (q.documentDate && q.documentDate.split("T")[0]) || new Date().toISOString().split("T")[0]
                 }));
 
-                setSGST(q.sgst);
-                setCGST(q.cgst);
+                setSGST(q.sgst || false);
+                setCGST(q.cgst || false);
                 setIsEditing(true);
 
                 showNotification(`Quotation #${docNumber} loaded for editing.`, "success");
-                return;
+                return true; // Success
+            } else {
+                showNotification(`Quotation #${docNumber} not found.`, "error");
+                generateUniqueNumber();
+                return false;
             }
+        } catch (error) {
+            console.error(error);
+            showNotification("Error fetching quotation.", "error");
+            return false;
+        } finally {
+            setFormLoading(false);
+        }
+    };
 
-            // -----------------------------------------------------
-            // 2️⃣ TRY FETCHING INVOICE (ADMIN ROUTE)
-            // -----------------------------------------------------
-            // ⭐ UPDATED API URL: /api/admin/invoice/fetch/:number
+    // 2. Function to fetch INVOICE only (Used when I-Mode is selected or loading from Invoice List)
+    const fetchInvoiceByNumber = async (docNumber) => {
+        if (!docNumber) {
+            showNotification("Please enter an Invoice number.", "info");
+            return false;
+        }
+        setFormLoading(true);
+        setIsEditing(false);
+        setQuotation(false);
+        setInvoice(true); // Explicitly set mode
+
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) { showNotification("Authentication token missing.", "ALERT"); return false; }
+
+            // ⭐ ADMIN ROUTE: /api/admin/invoice/fetch/:number
             const invoiceURL = `${BASE_URL}/api/admin/invoice/fetch/${docNumber}`;
 
-            response = await fetch(invoiceURL, {
+            const response = await fetch(invoiceURL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            result = await response.json();
+            const result = await response.json();
 
             if (response.ok && result.invoice) {
                 const inv = result.invoice;
 
-                // 🔥 FIX: Normalize items
+                // Normalize items and date
                 const normalizedItems = inv.items.map(i => ({
                     description: i.description,
                     quantity: Number(i.quantity),
@@ -4638,40 +4663,66 @@ function AdminPanel({ onLogout }) {
                     id: i._id || Date.now() + Math.random()
                 }));
 
-                setInvoice(true);
-                setQuotation(false);
-
                 setBillDetails(prev => ({
                     ...prev,
                     billTO: inv.billTO,
                     customerAddress: inv.customerAddress,
                     customerGSTIN: inv.customerGSTIN,
                     items: normalizedItems,
-                    quotationNumber: inv.invoiceNumber,
+                    quotationNumber: inv.invoiceNumber, // Invoice Number is saved in quotationNumber state temporarily
                     associatedQuotationNumber: inv.originalQuotationNumber || "",
-                    documentDate: inv.documentDate.split("T")[0] || new Date().toISOString().split("T")[0] // Added split to ensure date format
+                    documentDate: (inv.documentDate && inv.documentDate.split("T")[0]) || new Date().toISOString().split("T")[0]
                 }));
 
-                setSGST(inv.sgst);
-                setCGST(inv.cgst);
+                setSGST(inv.sgst || false);
+                setCGST(inv.cgst || false);
                 setIsEditing(true);
 
                 showNotification(`Invoice #${docNumber} loaded for editing.`, "success");
-                return;
+                return true; // Success
+            } else {
+                showNotification(`Invoice #${docNumber} not found.`, "error");
+                generateUniqueNumber();
+                return false;
             }
-
-            // -----------------------------------------------------
-            // 3️⃣ NOT FOUND
-            // -----------------------------------------------------
-            showNotification(`Document #${docNumber} not found`, "error");
-            generateUniqueNumber();
-
         } catch (error) {
             console.error(error);
-            showNotification("Error fetching document", "error");
+            showNotification("Error fetching invoice.", "error");
+            return false;
         } finally {
             setFormLoading(false);
         }
+    };
+
+    // 3. Main Search/Load Handler (For Search Box functionality)
+    const handleSearchOrLoad = async (docNumber) => {
+        // Use searchNumber if docNumber is not explicitly passed (i.e., when clicking the search button)
+        if (typeof docNumber === "object" || !docNumber) {
+            docNumber = searchNumber;
+        }
+
+        if (!docNumber) {
+            showNotification("Please enter a document number to search.", "info");
+            return;
+        }
+
+        // Prioritize the currently selected mode (Invoice or Quotation)
+        if (invoice) {
+            const loaded = await fetchInvoiceByNumber(docNumber);
+            if (loaded) return;
+
+            // If Invoice fails, try Quotation as a fallback (This retains the multi-search capability)
+            await fetchQuotationByNumber(docNumber);
+
+        } else { // Must be quotation
+            const loaded = await fetchQuotationByNumber(docNumber);
+            if (loaded) return;
+
+            // If Quotation fails, try Invoice as a fallback
+            await fetchInvoiceByNumber(docNumber);
+        }
+
+        // If nothing was loaded, the specific fetch functions will handle showing the 'Not Found' notification
     };
 
 
@@ -5028,22 +5079,25 @@ function AdminPanel({ onLogout }) {
 
                                                         <button
                                                             onClick={() => {
-                                                                // Step 1: switch to form page
+                                                                // Step 1: Switch to form page
                                                                 setActiveTab("newBill");
 
-                                                                // Step 2: set mode correctly
-                                                                if (isInvoice) {
-                                                                    setInvoice(true);
-                                                                    setQuotation(false);
-                                                                } else {
-                                                                    setInvoice(false);
-                                                                    setQuotation(true);
-                                                                }
+                                                                // Step 2: Set mode correctly immediately
+                                                                const typeToLoad = isInvoice ? 'invoice' : 'quotation';
+                                                                setInvoice(isInvoice);
+                                                                setQuotation(!isInvoice);
 
-                                                                // Step 3: wait for form reset to finish (VERY IMPORTANT)
+                                                                // Step 3: Wait for state reset, then load the document using the specific function
                                                                 setTimeout(() => {
-                                                                    handleSearch(number);
-                                                                }, 400); // 400ms = stable, avoids race conditions
+                                                                    if (typeToLoad === 'invoice') {
+                                                                        // Direct call for Invoice
+                                                                        fetchInvoiceByNumber(number);
+                                                                    } else {
+                                                                        // Direct call for Quotation
+                                                                        fetchQuotationByNumber(number);
+                                                                    }
+                                                                }, 400); // Ensures state reset completes before fetching
+
                                                             }}
                                                             className="bg-yellow-500 text-white px-3 py-1 rounded-lg shadow-md hover:bg-yellow-600 text-sm flex items-center gap-1 transition"
                                                         >

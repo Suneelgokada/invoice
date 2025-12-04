@@ -8171,21 +8171,21 @@ function App() {
                 {/* Main Card */}
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                     {/* Header Section with Logo */}
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
-                        <div className="flex justify-center mb-4">
-                            <div className="bg-white p-4 rounded-xl shadow-lg">
-                                <svg width="80" height="80" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M40 40 H90 Q120 40 120 70 Q120 85 105 92.5 Q120 100 120 115 Q120 145 90 145 H40 Z" fill="#0A2540"/>
-                                    <path d="M60 60 H80 Q95 60 95 75 Q95 90 80 90 H60 Z" fill="white"/>
-                                    <path d="M60 105 H85 Q100 105 100 122.5 Q100 140 85 140 H60 Z" fill="white"/>
-                                    <path d="M130 75 Q130 40 165 40 Q185 40 195 50 Q205 60 205 75 Q205 90 195 100 Q185 110 165 110 H145 V145 H130 Z" fill="#FFD700"/>
-                                    <path d="M145 55 H165 Q180 55 180 75 Q180 95 165 95 H145 Z" fill="white"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Design Blocks</h1>
-                        <p className="text-blue-100 text-sm">Welcome back! Please sign in to continue</p>
-                    </div>
+                   <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
+    <div className="flex justify-center mb-4">
+        <div className="bg-white p-4 rounded-xl shadow-lg">
+            <img 
+                src="https://designblocks.in/img/DB.png" 
+                alt="Design Blocks Logo" 
+                className="w-20 h-20 object-contain"
+            />
+        </div>
+    </div>
+
+    <h1 className="text-3xl font-bold text-white mb-2">Design Blocks</h1>
+    <p className="text-blue-100 text-sm">Welcome back! Please sign in to continue</p>
+</div>
+
 
                     {/* Form Section */}
                     <div className="px-8 py-10">
