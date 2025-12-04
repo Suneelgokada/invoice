@@ -2855,12 +2855,12 @@ function AdminPanel({ onLogout }) {
     // Fetch invoice/quotation by number (FROM App.jsx)
 const handleSearch = async (docNumber) => {
 
-    if (typeof docNumber === 'object' || !docNumber) {
+    if (typeof docNumber === "object" || !docNumber) {
         docNumber = searchNumber;
     }
 
     if (!docNumber) {
-        showNotification("Please enter a document number to search.", 'info');
+        showNotification("Please enter a document number to search.", "info");
         return;
     }
 
@@ -2870,8 +2870,11 @@ const handleSearch = async (docNumber) => {
 
         const token = localStorage.getItem("authToken");
 
-        // 1️⃣ FETCH QUOTATION
+        // -----------------------------------------------------
+        // 1️⃣ TRY FETCHING QUOTATION (ADMIN ROUTE)
+        // -----------------------------------------------------
         const quoteURL = `${BASE_URL}/api/admin/quotation/fetch/${docNumber}`;
+
         let response = await fetch(quoteURL, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -2879,6 +2882,14 @@ const handleSearch = async (docNumber) => {
 
         if (response.ok && result.quotation) {
             const q = result.quotation;
+
+            // 🔥 FIX: Normalize items to avoid React crashes
+            const normalizedItems = q.items.map(i => ({
+                description: i.description,
+                quantity: Number(i.quantity),
+                unitPrice: Number(i.unitPrice),
+                id: i._id || Date.now() + Math.random()
+            }));
 
             setQuotation(true);
             setInvoice(false);
@@ -2888,7 +2899,7 @@ const handleSearch = async (docNumber) => {
                 billTO: q.billTO,
                 customerAddress: q.customerAddress,
                 customerGSTIN: q.customerGSTIN,
-                items: q.items,
+                items: normalizedItems,
                 quotationNumber: q.quotationNumber,
                 associatedQuotationNumber: "",
                 documentDate: q.documentDate || new Date().toISOString().split("T")[0]
@@ -2898,12 +2909,15 @@ const handleSearch = async (docNumber) => {
             setCGST(q.cgst);
             setIsEditing(true);
 
-            showNotification(`Quotation #${docNumber} loaded for editing.`, 'success');
+            showNotification(`Quotation #${docNumber} loaded for editing.`, "success");
             return;
         }
 
-        // 2️⃣ FETCH INVOICE
+        // -----------------------------------------------------
+        // 2️⃣ TRY FETCHING INVOICE (ADMIN ROUTE)
+        // -----------------------------------------------------
         const invoiceURL = `${BASE_URL}/api/admin/invoice/fetch/${docNumber}`;
+
         response = await fetch(invoiceURL, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -2911,6 +2925,14 @@ const handleSearch = async (docNumber) => {
 
         if (response.ok && result.invoice) {
             const inv = result.invoice;
+
+            // 🔥 FIX: Normalize items
+            const normalizedItems = inv.items.map(i => ({
+                description: i.description,
+                quantity: Number(i.quantity),
+                unitPrice: Number(i.unitPrice),
+                id: i._id || Date.now() + Math.random()
+            }));
 
             setInvoice(true);
             setQuotation(false);
@@ -2920,8 +2942,8 @@ const handleSearch = async (docNumber) => {
                 billTO: inv.billTO,
                 customerAddress: inv.customerAddress,
                 customerGSTIN: inv.customerGSTIN,
+                items: normalizedItems,
                 quotationNumber: inv.invoiceNumber,
-                items: inv.items,
                 associatedQuotationNumber: inv.originalQuotationNumber || "",
                 documentDate: inv.documentDate || new Date().toISOString().split("T")[0]
             }));
@@ -2930,12 +2952,14 @@ const handleSearch = async (docNumber) => {
             setCGST(inv.cgst);
             setIsEditing(true);
 
-            showNotification(`Invoice #${docNumber} loaded for editing.`, 'success');
+            showNotification(`Invoice #${docNumber} loaded for editing.`, "success");
             return;
         }
 
+        // -----------------------------------------------------
         // 3️⃣ NOT FOUND
-        showNotification(`Document #${docNumber} not found`, 'error');
+        // -----------------------------------------------------
+        showNotification(`Document #${docNumber} not found`, "error");
         generateUniqueNumber();
 
     } catch (error) {
@@ -2945,6 +2969,7 @@ const handleSearch = async (docNumber) => {
         setFormLoading(false);
     }
 };
+
 
 
 
