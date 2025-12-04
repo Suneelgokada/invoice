@@ -145,6 +145,8 @@ router.get("/invoices", verifyToken, authorizeRole("admin"), invoiceController.f
 router.get("/quotations", verifyToken, authorizeRole("admin"), quotationController.fetchAllQuotations);
 router.put("/change-user-password", verifyToken, authorizeRole("admin"), adminController.changePassword);
 router.get("/analytics", adminController.verifyToken, adminController.analytics);
+router.delete("/invoice/:number", verifyToken, authorizeRole("admin"), invoiceController.deleteInvoice);
+router.delete("/quotation/:number", verifyToken, authorizeRole("admin"), quotationController.deleteQuotation);
 module.exports = router;
 
 
