@@ -6518,7 +6518,7 @@
 //     const [originalQuotationNumber, setOriginalQuotationNumber] = useState(null);
 //     const [isItemEditing, setIsItemEditing] = useState(false);
 //     const [editingItemOriginal, setEditingItemOriginal] = useState(null);
-    
+
 
 //     const [billDetails, setBillDetails] = useState({
 //         billTO: "",
@@ -7693,7 +7693,7 @@ function App() {
         quantity: "",
         unitPrice: "",
     });
-        // --- Generate Unique Number ---
+    // --- Generate Unique Number ---
     const generateUniqueNumber = useCallback(async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
@@ -7745,7 +7745,7 @@ function App() {
     };
 
     const handleEditItem = (item) => {
-        setTableItems({ 
+        setTableItems({
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice
@@ -7966,6 +7966,76 @@ function App() {
         }
     };
 
+    // ⭐ NEW FUNCTION: Load Quotation details specifically into Invoice Form
+    const loadQuotationForInvoice = async (docNumber) => {
+        if (!docNumber) {
+            showModal("Please enter a Quotation Ref number.", "ALERT");
+            return;
+        }
+
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            showModal("Authentication token missing.", "ALERT");
+            return;
+        }
+
+        try {
+            setSaveLoading(true); // Temporary loading indicator for the action
+
+            const quoteURL = `${BASE_URL}/api/quotation/fetch/${docNumber}`;
+
+            const response = await fetch(quoteURL, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const result = await response.json();
+
+            if (response.ok && result.quotation) {
+                const q = result.quotation;
+
+                // ⚠️ IMPORTANT: Get the current INVOICE NUMBER before overwriting other fields
+                const currentInvoiceNumber = billDetails.quotationNumber;
+
+                // Normalize items
+                const normalizedItems = q.items.map(i => ({
+                    description: i.description,
+                    quantity: Number(i.quantity),
+                    unitPrice: Number(i.unitPrice),
+                    id: i._id || Date.now() + Math.random() // Ensure each item has a unique ID
+                }));
+
+                // Update form states with Quotation details
+                setBillDetails(prev => ({
+                    ...prev,
+                    billTO: q.billTO || "",
+                    customerAddress: q.customerAddress || "",
+                    customerGSTIN: q.customerGSTIN || "",
+                    items: normalizedItems,
+                    // DO NOT overwrite the existing Invoice Number! Re-assign it.
+                    quotationNumber: currentInvoiceNumber,
+                    // Set the associated Quotation Number
+                    associatedQuotationNumber: q.quotationNumber,
+                    documentDate: (q.documentDate && q.documentDate.split("T")[0]) || new Date().toISOString().split("T")[0]
+                }));
+
+                // Update GST states based on Quotation
+                setSGST(q.sgst || false);
+                setCGST(q.cgst || false);
+                setIsEditing(false); // Since we are creating a new invoice, set editing to false (for Save action)
+
+                showModal(`Quotation #${docNumber} details successfully loaded into Invoice.`, "ALERT");
+
+            } else {
+                showModal(`Quotation #${docNumber} not found.`, "ALERT");
+            }
+        } catch (error) {
+            console.error(error);
+            showModal("Error loading quotation for invoice.", "ALERT");
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+    // ----------------- END loadQuotationForInvoice -----------------
+
 
     const handleDelete = () => {
         const docType = invoice ? "Invoice" : "Quotation";
@@ -8162,118 +8232,118 @@ function App() {
 
     // ----------------- LOGIN SCREEN -----------------
     if (!isAuthenticated) {
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 font-sans">
-            <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
-            <script src="https://cdn.tailwindcss.com"></script>
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 font-sans">
+                <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
+                <script src="https://cdn.tailwindcss.com"></script>
 
-            <div className="w-full max-w-md">
-                {/* Main Card */}
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    {/* Header Section with Logo */}
-                   <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
-    <div className="flex justify-center mb-4">
-        <div className="bg-white p-4 rounded-xl shadow-lg">
-            <img 
-                src="https://designblocks.in/img/DB.png" 
-                alt="Design Blocks Logo" 
-                className="w-20 h-20 object-contain"
-            />
-        </div>
-    </div>
-
-    <h1 className="text-3xl font-bold text-white mb-2">Design Blocks</h1>
-    <p className="text-blue-100 text-sm">Welcome back! Please sign in to continue</p>
-</div>
-
-
-                    {/* Form Section */}
-                    <div className="px-8 py-10">
-                        <div className="space-y-6">
-                            {/* Username Input */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Username
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                        <User className="text-gray-400" size={20} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
-                                        placeholder="Enter your username"
+                <div className="w-full max-w-md">
+                    {/* Main Card */}
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        {/* Header Section with Logo */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
+                            <div className="flex justify-center mb-4">
+                                <div className="bg-white p-4 rounded-xl shadow-lg">
+                                    <img
+                                        src="https://designblocks.in/img/DB.png"
+                                        alt="Design Blocks Logo"
+                                        className="w-20 h-20 object-contain"
                                     />
                                 </div>
                             </div>
 
-                            {/* Password Input */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Password
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                        <Lock className="text-gray-400" size={20} />
+                            <h1 className="text-3xl font-bold text-white mb-2">Design Blocks</h1>
+                            <p className="text-blue-100 text-sm">Welcome back! Please sign in to continue</p>
+                        </div>
+
+
+                        {/* Form Section */}
+                        <div className="px-8 py-10">
+                            <div className="space-y-6">
+                                {/* Username Input */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Username
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                            <User className="text-gray-400" size={20} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
+                                            placeholder="Enter your username"
+                                        />
                                     </div>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
-                                        placeholder="Enter your password"
-                                    />
                                 </div>
-                            </div>
 
-                            {/* Remember Me */}
-                            <div className="flex items-center justify-between text-sm">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <input 
-                                        type="checkbox" 
-                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                                    />
-                                    <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
-                                </label>
-                            </div>
+                                {/* Password Input */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Password
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                            <Lock className="text-gray-400" size={20} />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="block w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-gray-900 placeholder-gray-400"
+                                            placeholder="Enter your password"
+                                        />
+                                    </div>
+                                </div>
 
-                            {/* Submit Button */}
-                            <button
-                                onClick={handleLogin}
-                                disabled={authLoading}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3.5 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
-                            >
-                                {authLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span>Signing in...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Lock size={18} />
-                                        <span>Sign In</span>
-                                    </>
-                                )}
-                            </button>
+                                {/* Remember Me */}
+                                <div className="flex items-center justify-between text-sm">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <span className="text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
+                                    </label>
+                                </div>
+
+                                {/* Submit Button */}
+                                <button
+                                    onClick={handleLogin}
+                                    disabled={authLoading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3.5 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                                >
+                                    {authLoading ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            <span>Signing in...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock size={18} />
+                                            <span>Sign In</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Security Badge */}
-                <div className="mt-6 text-center">
-                    <p className="text-xs text-gray-500 flex items-center justify-center gap-2">
-                        <Lock size={14} />
-                        Secured by 256-bit encryption
-                    </p>
+                    {/* Security Badge */}
+                    <div className="mt-6 text-center">
+                        <p className="text-xs text-gray-500 flex items-center justify-center gap-2">
+                            <Lock size={14} />
+                            Secured by 256-bit encryption
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
     // ----------------- ADMIN PANEL -----------------
     if (userRole === "admin") {
@@ -8284,7 +8354,7 @@ function App() {
             </div>
         );
     }
-        // ---------------- EMPLOYEE UI (INVOICE GENERATOR) ----------------
+    // ---------------- EMPLOYEE UI (INVOICE GENERATOR) ----------------
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 font-sans">
             <Modal state={modalState} onClose={closeModal} onConfirm={modalState.onConfirm} />
@@ -8400,11 +8470,19 @@ function App() {
                                     />
                                 </div>
 
+
+
                                 {invoice && (
                                     <div className="flex items-center gap-3">
-                                        <h1 className="font-medium">Quotation Number</h1>
+                                        {/* ⭐ FIX: Use flex-shrink and responsive text size for small screens (sm: text-sm) 
+            We apply text-xs (extra small) and flex-shrink-0 to prevent label overflow 
+            while keeping the main input flexible.
+        */}
+                                        <h1 className="font-medium text-xs sm:text-base whitespace-nowrap flex-shrink-0">
+                                            Quotation Ref:
+                                        </h1>
 
-                                        <div className="flex border border-blue-500 rounded-lg shadow-md">
+                                        <div className="flex border border-blue-500 rounded-lg shadow-md w-full"> {/* Added w-full for better layout */}
                                             <input
                                                 type="text"
                                                 value={billDetails.associatedQuotationNumber}
@@ -8415,17 +8493,22 @@ function App() {
                                                         associatedQuotationNumber: e.target.value
                                                     })
                                                 }
-                                                className="outline-none rounded-l-lg px-2 py-1"
+                                                // ⭐ UI FIX: Decreased padding to fit better on small screens
+                                                className="outline-none rounded-l-lg px-2 py-1 text-sm w-full min-w-0"
                                             />
                                             <button
-                                                onClick={() => handleSearch(billDetails.associatedQuotationNumber)}
-                                                className="bg-blue-500 text-white px-3 py-1 rounded-r-lg"
+                                                onClick={() => loadQuotationForInvoice(billDetails.associatedQuotationNumber)}
+                                                disabled={saveLoading}
+                                                // ⭐ UI FIX: Ensure button is compact
+                                                className="bg-blue-500 text-white px-3 py-1 rounded-r-lg hover:bg-blue-600 disabled:opacity-50 text-sm flex-shrink-0"
                                             >
                                                 Load
                                             </button>
                                         </div>
                                     </div>
                                 )}
+
+
                             </div>
                         </div>
 
@@ -8495,11 +8578,10 @@ function App() {
 
                                         <button
                                             type="submit"
-                                            className={`px-3 py-2 rounded text-white shadow-md ${
-                                                isItemEditing
+                                            className={`px-3 py-2 rounded text-white shadow-md ${isItemEditing
                                                     ? "bg-orange-500"
                                                     : "bg-green-500"
-                                            }`}
+                                                }`}
                                         >
                                             {isItemEditing ? "Update Item" : "Add"}
                                         </button>
@@ -8551,7 +8633,7 @@ function App() {
                                 </div>
                             </form>
 
-                                                        {/* ITEMS TABLE LIST */}
+                            {/* ITEMS TABLE LIST */}
                             {billDetails.items.length > 0 && (
                                 <div className="overflow-x-scroll w-full py-5">
                                     <div className="w-full min-w-[50rem]">

@@ -5191,68 +5191,95 @@ function AdminPanel({ onLogout }) {
         );
     };
 
-    const renderChangePassword = () => (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">🔑 Change Password</h2>
-            <div className="bg-white p-8 rounded-xl shadow-xl max-w-lg mx-auto">
-                <p className="text-gray-600 mb-4 font-medium">Update your administrative password.</p>
-                <form className="space-y-6" onSubmit={handleSubmitPasswordChange}>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Current Password</label>
-                        <input
-                            type="password"
-                            name="oldPassword"
-                            value={passwordForm.oldPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            placeholder="Current Password"
-                            disabled={passwordLoading}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">New Password</label>
-                        <input
-                            type="password"
-                            name="newPassword"
-                            value={passwordForm.newPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            minLength={6}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            placeholder="New Password (min 6 characters)"
-                            disabled={passwordLoading}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                        <input
-                            type="password"
-                            name="confirmNewPassword"
-                            value={passwordForm.confirmNewPassword}
-                            onChange={handlePasswordChange}
-                            required
-                            minLength={6}
-                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            placeholder="Confirm New Password"
-                            disabled={passwordLoading}
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md disabled:bg-indigo-400"
-                        disabled={passwordLoading || !passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmNewPassword}
-                    >
-                        {passwordLoading ? (
-                            <Loader size={20} className="animate-spin mx-auto" />
-                        ) : (
-                            'Save New Password'
-                        )}
-                    </button>
-                </form>
-            </div>
+const renderChangePassword = () => (
+    <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* 🔑 Updated H2 title for clarity and professionalism */}
+        <h2 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+            🔑 User Account Management
+        </h2>
+        
+        {/* ⭐ NEW/UPDATED PROFESSIONAL DESCRIPTION */}
+        <p className="text-gray-600 mb-6 font-medium text-lg border-b pb-4">
+            Administrator Password Reset Utility. Use this form to securely reset the password for any specific user account via their Username.
+        </p>
+
+        <div className="bg-white p-8 rounded-xl shadow-xl max-w-lg mx-auto">
+            {/* The previous <p> tag was here and has been moved/integrated above. */}
+            
+            <form
+                className="space-y-6"
+                // ⭐ UNCHANGED: Call handleSubmitPasswordChange with isAdmin=true and targetUsername
+                onSubmit={(e) => 
+                    handleSubmitPasswordChange(e, true, null, passwordForm.usernameToReset)
+                }
+            >
+                {/* 1. USERNAME INPUT (New Field) */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Target Username</label>
+                    <input
+                        type="text"
+                        name="usernameToReset"
+                        // ⭐ STATE BINDING: Assuming you add 'usernameToReset' to passwordForm state
+                        value={passwordForm.usernameToReset || ''} 
+                        onChange={(e) => {
+                            // Using handlePasswordChange to manage state, setting a new field
+                            handlePasswordChange({ target: { name: 'usernameToReset', value: e.target.value } });
+                        }}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        placeholder="Enter Username to reset"
+                        disabled={passwordLoading}
+                    />
+                </div>
+                
+                {/* 2. NEW PASSWORD INPUT (UNCHANGED) */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">New Password</label>
+                    <input
+                        type="password"
+                        name="newPassword"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength={6}
+                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        placeholder="New Password (min 6 characters)"
+                        disabled={passwordLoading}
+                    />
+                </div>
+                
+                {/* 3. CONFIRM NEW PASSWORD INPUT (UNCHANGED) */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                    <input
+                        type="password"
+                        name="confirmNewPassword"
+                        value={passwordForm.confirmNewPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength={6}
+                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        placeholder="Confirm New Password"
+                        disabled={passwordLoading}
+                    />
+                </div>
+                
+                <button
+                    type="submit"
+                    className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md disabled:bg-indigo-400"
+                    // ⭐ UNCHANGED DISABLED LOGIC
+                    disabled={passwordLoading || !passwordForm.usernameToReset || !passwordForm.newPassword || !passwordForm.confirmNewPassword}
+                >
+                    {passwordLoading ? (
+                        <Loader size={20} className="animate-spin mx-auto" />
+                    ) : (
+                        'Reset Password for User'
+                    )}
+                </button>
+            </form>
         </div>
-    );
+    </div>
+);
 
     // --- REPLACED: renderNewBillForm (FROM App.jsx UI) ---
     const renderNewBillForm = () => (
@@ -5324,14 +5351,14 @@ function AdminPanel({ onLogout }) {
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
                             {invoice && (
-                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto">
-                                    <h1 className="font-medium">Quotation Ref:</h1>
-                                    <div className="flex items-center border border-blue-500 rounded-lg shadow-md flex-1">
+                                <div className="flex items-center gap-3 mt-3 w-full md:w-auto flex-wrap sm:flex-nowrap">
+                                    <h1 className="font-medium text-sm flex-shrink-0">Quotation Ref:</h1>
+                                    <div className="flex items-center border border-blue-500 rounded-lg shadow-md flex-1 w-full sm:w-auto">
                                         <input
                                             type="text"
                                             value={billDetails.associatedQuotationNumber}
                                             placeholder={`Enter Q-Number to load`}
-                                            className="outline-none rounded-l-lg px-3 py-2 flex-1 min-w-0"
+                                            className="outline-none rounded-l-lg px-2 py-1 text-sm flex-1 min-w-0"
                                             onChange={(e) => setBillDetails({ ...billDetails, associatedQuotationNumber: e.target.value })}
                                         />
                                         <button
@@ -5339,7 +5366,7 @@ function AdminPanel({ onLogout }) {
                                             // This function loads the data but maintains the 'invoice' mode.
                                             onClick={() => loadQuotationForInvoice(billDetails.associatedQuotationNumber)}
                                             disabled={formLoading}
-                                            className="bg-blue-500 text-white px-3 py-2 rounded-r-lg h-full hover:bg-blue-600 disabled:opacity-50"
+                                            className="bg-blue-500 text-white px-2 py-1 rounded-r-lg h-full hover:bg-blue-600 disabled:opacity-50 text-sm flex-shrink-0"
                                         >
                                             Load
                                         </button>
@@ -5657,6 +5684,7 @@ function AdminPanel({ onLogout }) {
                 <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
                 <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
                 <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
+                
             </nav>
             <div className="p-4 border-t border-indigo-800">
                 <button
