@@ -3925,6 +3925,7 @@ import {
 } from 'lucide-react';
 import ReactToPrint from "react-to-print";
 import AnalyticsDashboard from "./AnalyticsDashboard";
+import PurchaseManager from './PurchaseManager';
 
 
 // --- CONFIGURATION ---
@@ -5190,8 +5191,6 @@ function AdminPanel({ onLogout }) {
         );
     };
 
-
-
     const renderChangePassword = () => (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-6">🔑 Change Password</h2>
@@ -5657,6 +5656,7 @@ function AdminPanel({ onLogout }) {
                 <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
                 <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
                 <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
+                <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
             </nav>
             <div className="p-4 border-t border-indigo-800">
                 <button
@@ -5671,6 +5671,7 @@ function AdminPanel({ onLogout }) {
     );
 
     const renderContent = () => {
+        const token = localStorage.getItem('authToken');
         switch (activeTab) {
             case 'dashboard':
                 return renderDashboard();
@@ -5682,6 +5683,15 @@ function AdminPanel({ onLogout }) {
                 return renderNewBillForm();
             case 'changePassword':
                 return renderChangePassword();
+        case 'purchases': 
+        
+            return (
+                <PurchaseManager // ⭐ RENDER SEPARATE COMPONENT ⭐
+                    BASE_URL={BASE_URL}
+                    showNotification={showNotification}
+                    token={token}
+                />
+            );
             default:
                 return renderDashboard();
         }

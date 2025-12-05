@@ -480,12 +480,13 @@
 
 
 require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const invoiceRoutes = require("./routes/invoiceRoutes");
-
+const purchaseRoutes = require('./routes/purchaseRoutes');
 const quotationRoutes=require('./routes/quotationRoutes');
 const adminRoutes = require("./routes/adminRoutes");
 const app = express();
@@ -498,7 +499,7 @@ app.use(express.json());
 app.use("/api/invoice",  invoiceRoutes);
 app.use("/api/quotation", require("./routes/quotationRoutes"));
 app.use("/api/admin", adminRoutes);
-
+app.use('/api/admin', purchaseRoutes);
 
 
 // MongoDB Connection
