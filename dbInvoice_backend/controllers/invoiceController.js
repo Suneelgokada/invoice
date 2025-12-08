@@ -2,153 +2,167 @@
 const invoice = require("../models/invoice");
 const Invoice = require("../models/invoice");
 
-// Generate invoice number
+
 // exports.generateInvoiceNumber = async (req, res) => {
 //   try {
-//     const today = new Date();
-//     const day = String(today.getDate()).padStart(2, "0"); // e.g., 14
-//     const todayPrefix = `INVDB${day}`;                    // INVDB14
-
-//     // 1. Fetch LAST saved invoice overall (not by date)
+//     const prefix = "INVDB"; // fixed prefix
 //     const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
 
 //     let runningNumber = 1;
 
 //     if (lastInvoice) {
-//       const last2Digits = parseInt(lastInvoice.invoiceNumber.slice(-2)); 
-//       runningNumber = last2Digits + 1;
+//       // extract last 3 digits only
+//       const last3 = parseInt(lastInvoice.invoiceNumber.slice(-3)); 
+//       runningNumber = last3 + 1;
 //     }
 
-//     // 2. Combine prefix + running number
-//     const padded = String(runningNumber).padStart(2, "0");  
-//     const newInvoiceNumber = `${todayPrefix}${padded}`;
+//     const padded = String(runningNumber).padStart(3, "0"); // 001, 002, 003 ...
+//     const newInvoiceNumber = `${prefix}${padded}`;
 
-//     res.status(200).json({ 
-//       success: true, 
-//       invoiceNumber: newInvoiceNumber 
+//     res.status(200).json({
+//       success: true,
+//       invoiceNumber: newInvoiceNumber
 //     });
+
 //   } catch (err) {
 //     res.status(500).json({ error: err.message });
 //   }
 // };
 
+exports.generateInvoiceNumber = async () => {
+  const prefix = "INVDB";
 
-exports.generateInvoiceNumber = async (req, res) => {
-  try {
-    const prefix = "INVDB"; // fixed prefix
-    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+  // Only consider auto-generated invoices (those starting with prefix)
+  const lastInvoice = await Invoice.findOne({
+    invoiceNumber: { $regex: `^${prefix}\\d+$` }
+  }).sort({ createdAt: -1 });
 
-    let runningNumber = 1;
+  let nextNumber = 1;
 
-    if (lastInvoice) {
-      // extract last 3 digits only
-      const last3 = parseInt(lastInvoice.invoiceNumber.slice(-3)); 
-      runningNumber = last3 + 1;
-    }
-
-    const padded = String(runningNumber).padStart(3, "0"); // 001, 002, 003 ...
-    const newInvoiceNumber = `${prefix}${padded}`;
-
-    res.status(200).json({
-      success: true,
-      invoiceNumber: newInvoiceNumber
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (lastInvoice) {
+    const lastCode = lastInvoice.invoiceNumber;
+    const numericPart = parseInt(lastCode.replace(prefix, ""));
+    nextNumber = numericPart + 1;
   }
+
+  const padded = String(nextNumber).padStart(3, "0");
+  return `${prefix}${padded}`;
 };
 
 
 
 // exports.saveInvoice = async (req, res) => {
 //   try {
+//     // 1️⃣ Auto-generate Invoice Number
+//     const prefix = "INVDB";
+//     const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+
+//     let runningNumber = 1;
+
+//     if (lastInvoice) {
+//       const last3Digits = parseInt(lastInvoice.invoiceNumber.slice(-3));
+//       runningNumber = last3Digits + 1;
+//     }
+
+//     const padded = String(runningNumber).padStart(3, "0");
+//     const invoiceNumber = `${prefix}${padded}`;
+
+//     // 2️⃣ Get request body
 //     const data = req.body;
 
-//     // Auto add total price inside items
-//     data.items = data.items.map(item => ({
+//     // 3️⃣ Auto add total = qty * unitPrice
+//     const updatedItems = data.items.map((item) => ({
 //       ...item,
-//       total: item.quantity * item.unitPrice
+//       total: item.quantity * item.unitPrice,
 //     }));
 
-//     const invoice = new Invoice(data);
-//     await invoice.save();
+//     // 4️⃣ Create invoice object for DB
+//     const newInvoice = new Invoice({
+//       invoiceNumber: invoiceNumber,
+//       quotationNumber: data.quotationNumber || "",   // 👈 add if needed
+//       billTO: data.billTO,
+//       customerAddress: data.customerAddress,
+//       customerGSTIN: data.customerGSTIN,
+//       items: updatedItems,
+//       sgst: data.sgst,
+//       cgst: data.cgst,
+//       SGSTAmount: data.SGSTAmount || 0,
+//       CGSTAmount: data.CGSTAmount || 0,
+//       taxableValue: data.taxableValue,
+//       invoiceValue: data.invoiceValue,
+//       paymentType: data.paymentType || "",
+//       note: data.note || "",
+//     });
+
+//     // 5️⃣ Save to DB
+//     await newInvoice.save();
 
 //     return res.status(201).json({
 //       success: true,
 //       message: "Invoice saved successfully",
-//       invoice
+//       invoiceNumber,
+//       invoice: newInvoice,
 //     });
+
 //   } catch (err) {
 //     return res.status(500).json({
 //       success: false,
-//       error: err.message
+//       error: err.message,
 //     });
 //   }
 // };
 
-
-
 exports.saveInvoice = async (req, res) => {
   try {
-    // 1️⃣ Auto-generate Invoice Number
-    const prefix = "INVDB";
-    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+    let data = req.body;
+    let finalInvoiceNumber = data.invoiceNumber?.trim();
 
-    let runningNumber = 1;
-
-    if (lastInvoice) {
-      const last3Digits = parseInt(lastInvoice.invoiceNumber.slice(-3));
-      runningNumber = last3Digits + 1;
+    if (finalInvoiceNumber) {
+      const exists = await Invoice.findOne({ invoiceNumber: finalInvoiceNumber });
+      if (exists) {
+        return res.status(400).json({
+          success: false,
+          error: `Invoice Number ${finalInvoiceNumber} already exists.`,
+        });
+      }
+    } else {
+      finalInvoiceNumber = await exports.generateInvoiceNumber();
     }
 
-    const padded = String(runningNumber).padStart(3, "0");
-    const invoiceNumber = `${prefix}${padded}`;
-
-    // 2️⃣ Get request body
-    const data = req.body;
-
-    // 3️⃣ Auto add total = qty * unitPrice
-    const updatedItems = data.items.map((item) => ({
+    // Auto calculate totals
+    data.items = (data.items || []).map(item => ({
       ...item,
-      total: item.quantity * item.unitPrice,
+      total: Number(item.quantity) * Number(item.unitPrice),
     }));
 
-    // 4️⃣ Create invoice object for DB
-    const newInvoice = new Invoice({
-      invoiceNumber: invoiceNumber,
-      quotationNumber: data.quotationNumber || "",   // 👈 add if needed
+    const invoice = new Invoice({
+      invoiceNumber: finalInvoiceNumber,
       billTO: data.billTO,
       customerAddress: data.customerAddress,
-      customerGSTIN: data.customerGSTIN,
-      items: updatedItems,
-      sgst: data.sgst,
-      cgst: data.cgst,
-      SGSTAmount: data.SGSTAmount || 0,
-      CGSTAmount: data.CGSTAmount || 0,
-      taxableValue: data.taxableValue,
-      invoiceValue: data.invoiceValue,
+      customerGSTIN: data.customerGSTIN || "",
+      items: data.items,
+      sgst: Boolean(data.sgst),
+      cgst: Boolean(data.cgst),
+      SGSTAmount: Number(data.SGSTAmount) || 0,
+      CGSTAmount: Number(data.CGSTAmount) || 0,
+      taxableValue: Number(data.taxableValue) || 0,
+      invoiceValue: Number(data.invoiceValue) || 0,
       paymentType: data.paymentType || "",
       note: data.note || "",
     });
 
-    // 5️⃣ Save to DB
-    await newInvoice.save();
+    await invoice.save();
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Invoice saved successfully",
-      invoiceNumber,
-      invoice: newInvoice,
+      invoice,
     });
-
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
+
 exports.fetchInvoiceByNumber = async (req, res) => {
     try {
         const number = req.params.number;
@@ -172,73 +186,128 @@ exports.fetchInvoiceByNumber = async (req, res) => {
     }
 };
 
+// exports.updateInvoice = async (req, res) => {
+//   try {
+//     const data = req.body;
+//     const invoiceNumber = data.invoiceNumber; // అప్డేట్ చేయడానికి ఇన్వాయిస్ నంబర్ తప్పనిసరి.
+
+//     // 1️⃣ ఇన్వాయిస్ నంబర్ అందించబడిందో లేదో తనిఖీ చేయండి
+//     if (!invoiceNumber) {
+//       return res.status(400).json({
+//         success: false,
+//         error: "Invoice number is required for update operation."
+//       });
+//     }
+
+//     // 2️⃣ Item Totalsను లెక్కించాలి
+//     const updatedItems = data.items.map((item) => ({
+//       ...item,
+//       total: item.quantity * item.unitPrice,
+//     }));
+
+//     // 3️⃣ అప్డేట్ చేయవలసిన డేటాను సిద్ధం చేయండి
+//     const invoiceFields = {
+//       // Invoice number ను అప్డేట్ చేయాల్సిన అవసరం లేదు, కానీ ఇతర ఫీల్డ్స్ ను అప్డేట్ చేయాలి
+//       originalQuotationNumber: data.originalQuotationNumber || data.quotationNumber || "", 
+//       billTO: data.billTO,
+//       customerAddress: data.customerAddress,
+//       customerGSTIN: data.customerGSTIN,
+//       items: updatedItems,
+//       sgst: data.sgst,
+//       cgst: data.cgst,
+//       SGSTAmount: data.SGSTAmount || 0,
+//       CGSTAmount: data.CGSTAmount || 0,
+//       taxableValue: data.taxableValue,
+//       invoiceValue: data.invoiceValue,
+//       paymentType: data.paymentType || "",
+//       note: data.note || "",
+//       updatedAt: new Date(), // అప్డేట్ సమయాన్ని ట్రాక్ చేయడానికి
+//     };
+
+//     // 4️⃣ డాక్యుమెంట్ ను వెతికి అప్డేట్ చేయండి
+//     const resultInvoice = await Invoice.findOneAndUpdate(
+//       { invoiceNumber: invoiceNumber }, // దేనిని వెతకాలి
+//       { $set: invoiceFields },         // దేనితో అప్డేట్ చేయాలి
+//       { new: true, runValidators: true } // అప్డేట్ అయిన డాక్యుమెంట్ ను రిటర్న్ చేయండి
+//     );
+
+//     // 5️⃣ అప్డేట్ సక్సెస్ అయిందా లేదా అని తనిఖీ చేయండి
+//     if (!resultInvoice) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Invoice number ${invoiceNumber} not found for update.`
+//       });
+//     }
+
+//     // 6️⃣ సక్సెస్ రెస్పాన్స్
+//     return res.status(200).json({
+//       success: true,
+//       message: "Invoice updated successfully",
+//       invoice: resultInvoice,
+//     });
+
+//   } catch (err) {
+//     return res.status(500).json({
+//       success: false,
+//       error: err.message,
+//     });
+//   }
+// };
+
 exports.updateInvoice = async (req, res) => {
   try {
     const data = req.body;
-    const invoiceNumber = data.invoiceNumber; // అప్డేట్ చేయడానికి ఇన్వాయిస్ నంబర్ తప్పనిసరి.
+    const originalNumber = data.originalInvoiceNumber || data.invoiceNumber;
 
-    // 1️⃣ ఇన్వాయిస్ నంబర్ అందించబడిందో లేదో తనిఖీ చేయండి
-    if (!invoiceNumber) {
-      return res.status(400).json({
-        success: false,
-        error: "Invoice number is required for update operation."
-      });
+    if (!originalNumber) {
+      return res.status(400).json({ success: false, error: "Original invoice number is required for update" });
     }
 
-    // 2️⃣ Item Totalsను లెక్కించాలి
-    const updatedItems = data.items.map((item) => ({
+    const existing = await Invoice.findOne({ invoiceNumber: originalNumber });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Invoice not found" });
+    }
+
+    if (data.invoiceNumber && data.invoiceNumber !== originalNumber) {
+      const exists = await Invoice.findOne({ invoiceNumber: data.invoiceNumber });
+      if (exists) {
+        return res.status(400).json({
+          success: false,
+          error: `Invoice Number ${data.invoiceNumber} already exists.`,
+        });
+      }
+      existing.invoiceNumber = data.invoiceNumber;
+    }
+
+    existing.billTO = data.billTO;
+    existing.customerAddress = data.customerAddress;
+    existing.customerGSTIN = data.customerGSTIN || "";
+    existing.items = (data.items || []).map(item => ({
       ...item,
-      total: item.quantity * item.unitPrice,
+      total: Number(item.quantity) * Number(item.unitPrice),
     }));
+    existing.sgst = Boolean(data.sgst);
+    existing.cgst = Boolean(data.cgst);
+    existing.SGSTAmount = Number(data.SGSTAmount) || 0;
+    existing.CGSTAmount = Number(data.CGSTAmount) || 0;
+    existing.taxableValue = Number(data.taxableValue) || 0;
+    existing.invoiceValue = Number(data.invoiceValue) || 0;
+    existing.paymentType = data.paymentType || "";
+    existing.note = data.note || "";
+    existing.updatedAt = new Date();
 
-    // 3️⃣ అప్డేట్ చేయవలసిన డేటాను సిద్ధం చేయండి
-    const invoiceFields = {
-      // Invoice number ను అప్డేట్ చేయాల్సిన అవసరం లేదు, కానీ ఇతర ఫీల్డ్స్ ను అప్డేట్ చేయాలి
-      originalQuotationNumber: data.originalQuotationNumber || data.quotationNumber || "", 
-      billTO: data.billTO,
-      customerAddress: data.customerAddress,
-      customerGSTIN: data.customerGSTIN,
-      items: updatedItems,
-      sgst: data.sgst,
-      cgst: data.cgst,
-      SGSTAmount: data.SGSTAmount || 0,
-      CGSTAmount: data.CGSTAmount || 0,
-      taxableValue: data.taxableValue,
-      invoiceValue: data.invoiceValue,
-      paymentType: data.paymentType || "",
-      note: data.note || "",
-      updatedAt: new Date(), // అప్డేట్ సమయాన్ని ట్రాక్ చేయడానికి
-    };
+    await existing.save();
 
-    // 4️⃣ డాక్యుమెంట్ ను వెతికి అప్డేట్ చేయండి
-    const resultInvoice = await Invoice.findOneAndUpdate(
-      { invoiceNumber: invoiceNumber }, // దేనిని వెతకాలి
-      { $set: invoiceFields },         // దేనితో అప్డేట్ చేయాలి
-      { new: true, runValidators: true } // అప్డేట్ అయిన డాక్యుమెంట్ ను రిటర్న్ చేయండి
-    );
-
-    // 5️⃣ అప్డేట్ సక్సెస్ అయిందా లేదా అని తనిఖీ చేయండి
-    if (!resultInvoice) {
-      return res.status(404).json({
-        success: false,
-        message: `Invoice number ${invoiceNumber} not found for update.`
-      });
-    }
-
-    // 6️⃣ సక్సెస్ రెస్పాన్స్
-    return res.status(200).json({
+    res.json({
       success: true,
       message: "Invoice updated successfully",
-      invoice: resultInvoice,
+      invoice: existing,
     });
-
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 exports.deleteInvoice = async (req, res) => {
   try {
