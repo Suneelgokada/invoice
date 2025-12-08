@@ -1447,6 +1447,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import AdminPanel from "./AdminPanel";
+import ReactToPrint from "react-to-print";
+
 import {
     User,
     Lock,
@@ -1558,6 +1560,7 @@ function App() {
     const [password, setPassword] = useState("");
     const [authLoading, setAuthLoading] = useState(false);
 
+
     // ---------- MODAL ----------
     const [modalState, setModalState] = useState({
         isVisible: false,
@@ -1576,7 +1579,7 @@ function App() {
 
     // ------ INVOICE STATES ------
     const date = new Date();
-    const printRef = useRef(null);
+    const printRef = useRef();
     const [quotation, setQuotation] = useState(true);
     const [invoice, setInvoice] = useState(false);
     const [sgst, setSGST] = useState(false);
@@ -1587,7 +1590,7 @@ function App() {
     const [CGST, setCGSTValue] = useState(0);
     const [searchNumber, setSearchNumber] = useState("");
     const [isEditingNumber, setIsEditingNumber] = useState(false);
-
+    
 
     // ⭐ NEW STATES FOR SEPARATE BUTTON LOADING
     const [saveLoading, setSaveLoading] = useState(false);
@@ -2199,7 +2202,7 @@ function App() {
 
             setTaxableValue(newTax);
             setSGSTValue(Number(sgstAmt.toFixed(2)));
-            (Number(cgstAmt.toFixed(2)));
+            setCGSTValue(Number(cgstAmt.toFixed(2)));
 
             setInvoiceValue(newTax + sgstAmt + cgstAmt);
         }
@@ -2737,12 +2740,18 @@ function App() {
                 </div>
 
                 {/* PRINT BUTTON */}
-                <button
-                    onClick={() => window.print()}
-                    className="text-white bg-red-500 font-medium px-4 py-2 rounded mb-5 mt-5 hide-on-print"
-                >
-                    Print Receipt
-                </button>
+                <ReactToPrint
+                    trigger={() => (
+                        <div className="flex justify-center hide-on-print">
+                            <button className="text-white bg-red-600 font-medium px-6 py-2 rounded-lg mb-5 mt-5 shadow-lg hover:bg-red-700 transition">
+                                Print Receipt
+                            </button>
+                        </div>
+                    )}
+                    content={() => printRef.current}
+                    pageStyle="@page { size: A4 portrait; margin: 20mm; } body { margin: 20px; }"
+                />
+
 
                 {/* PRINT TEMPLATE */}
                 <div className="w-full bg-white flex items-center justify-center">
@@ -2750,82 +2759,44 @@ function App() {
                         <div ref={printRef} className="flex flex-col w-[60rem] bg-white text-black printable-content">
 
                             {/* HEADER */}
-                            <div className="flex flex-row h-[15rem]">
-                                <div className="h-full w-[20rem] border border-black">
-                                    <div className="flex items-center justify-center h-[30%]">
-                                        <p className="text-center font-bold text-2xl">
-                                            {invoice ? `Invoice No: ${billDetails.invoiceNumber}`
-                                                : `Quotation No: ${billDetails.quotationNumber}`}
-                                        </p>
-
+                            <div className="flex flex-row h-[15rem] text-sm border border-black">
+                                {/* Left Side: Bill To */}
+                                <div className="h-full w-2/5 sm:w-[20rem] border-r border-black flex flex-col">
+                                    <div className="flex items-center justify-center h-[30%] border-b border-black">
+                                        <p className="text-center font-bold text-lg sm:text-2xl">{invoice ? "TAX INVOICE" : "QUOTATION"}</p>
                                     </div>
-
-                                    <div className="h-[70%] border-t border-black px-5 py-2 text-sm">
-                                        <p className="font-semibold text-lg">Bill to:</p>
-
-                                        {billDetails.customerGSTIN && (
-                                            <p>
-                                                <span className="font-semibold">GSTIN: </span>
-                                                {billDetails.customerGSTIN}
-                                            </p>
-                                        )}
-
-                                        <p>{billDetails.billTO}</p>
-                                        <p>{billDetails.customerAddress}</p>
-
+                                    <div className="flex-1 px-3 sm:px-5 py-2 overflow-hidden">
+                                        <p className="font-semibold text-base sm:text-lg">Bill to:</p>
+                                        {billDetails.customerGSTIN && <p className='truncate'><span className="font-medium">GSTIN:</span> {billDetails.customerGSTIN}</p>}
+                                        <p className='truncate'>{billDetails.billTO}</p>
+                                        <p className='truncate'>{billDetails.customerAddress}</p>
                                         {invoice && billDetails.associatedQuotationNumber && (
-                                            <p className="mt-2 text-xs">
-                                                Quotation Ref:{" "}
-                                                <span className="font-semibold">{billDetails.associatedQuotationNumber}</span>
-                                            </p>
+                                            <p className="mt-2 text-xs truncate">Quotation Ref: <span className="font-semibold">{billDetails.associatedQuotationNumber}</span></p>
                                         )}
                                     </div>
                                 </div>
 
-
-
-                                {/* RIGHT HEADER */}
-                                <div className="h-full w-[40rem] border border-black flex flex-col justify-between">
-                                    <div className="p-5 flex items-center justify-between">
-                                        <div className="w-[70%] text-sm">
-                                            <p className="font-semibold text-xl">
-                                                GSTIN:{" "}
-                                                <span className="font-medium text-base">37AKOPY6766H1Z4</span>
-                                            </p>
-                                            <p className="font-medium">DESIGN BLOCKS</p>
-
-                                            <p className="font-semibold text-lg pt-2">Address:</p>
-                                            <p>
-                                                Flat No 406, 5th Floor, Botcha Square, Madhavadhara,
-                                                VISAKHAPATNAM–530007
-                                            </p>
+                                {/* Right Side: Company Details */}
+                                <div className="h-full w-3/5 sm:w-[40rem] flex flex-col justify-between">
+                                    <div className="p-3 sm:p-5 flex items-start justify-between">
+                                        <div className="w-[70%] text-xs sm:text-sm">
+                                            <p className="font-semibold text-base sm:text-xl truncate">GSTIN: <span className="font-medium text-xs sm:text-base">37AKOPY6766H1Z4</span></p>
+                                            <p className="font-medium pt-1">DESIGN BLOCKS</p>
+                                            <p className="font-semibold text-base pt-2">Address:</p>
+                                            <p className='text-xs sm:text-sm'>Flat No 406, 5th Floor, Botcha Square, Madhavadhara, VISAKHAPATNAM-530007</p>
                                         </div>
-
-                                        <div className="w-[100px] h-[100px] flex items-center justify-center">
+                                        <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] flex items-center justify-center flex-shrink-0">
                                             <img
                                                 src="https://designblocks.in/img/DB.png"
-                                                alt="DB Logo"
-                                                onError={(e) => {
-                                                    e.target.src = "https://placehold.co/100x100?text=DB";
-                                                }}
+                                                alt="Design Blocks Logo"
+                                                className="w-full h-auto object-contain"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/A0B9FF/000?text=DB+LOGO"; }}
                                             />
                                         </div>
                                     </div>
-
-                                    {/* PRINT DATE */}
-                                    <div className="flex flex-col px-5 mb-3">
-                                        <label className="font-semibold">Document Date</label>
-                                        <input
-                                            type="date"
-                                            value={billDetails.documentDate}
-                                            onChange={(e) =>
-                                                setBillDetails({
-                                                    ...billDetails,
-                                                    documentDate: e.target.value,
-                                                })
-                                            }
-                                            className="border px-2 py-1 rounded"
-                                        />
+                                    <div className="flex justify-between h-10 px-3 sm:px-5 border-t border-black text-sm">
+                                        <p className="font-semibold text-sm sm:text-lg">{invoice ? "Invoice" : "Quotation"} No: <span className="font-normal">{billDetails.quotationNumber}</span></p>
+                                        <p className='whitespace-nowrap'>Date: <span>{new Date(billDetails.documentDate).toLocaleDateString("en-GB")}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -2880,18 +2851,18 @@ function App() {
                                         <tr className="h-8 border border-black">
                                             <td colSpan={3}></td>
                                             <td className="px-2 text-right font-semibold">SGST @9%</td>
-                                            <td className="px-2 text-right">{SGST}</td>
+                                            <td className="px-2 text-right">{SGST}</td> {/* ✅ use SGSTAmount */}
                                         </tr>
                                     )}
 
-                                    {/* CGST */}
                                     {cgst && (
                                         <tr className="h-8 border border-black">
                                             <td colSpan={3}></td>
                                             <td className="px-2 text-right font-semibold">CGST @9%</td>
-                                            <td className="px-2 text-right">{CGST}</td>
+                                            <td className="px-2 text-right">{CGST}</td> {/* ✅ use CGSTAmount */}
                                         </tr>
                                     )}
+
 
                                     {/* GRAND TOTAL */}
                                     <tr className="border border-black h-10 bg-blue-100">
