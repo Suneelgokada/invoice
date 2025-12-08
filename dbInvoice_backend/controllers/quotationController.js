@@ -583,7 +583,10 @@ const Quotation = require("../models/quotation");
 exports.generateQuotationNumber = async () => {
   const prefix = "QUODB";
 
-  const lastQuotation = await Quotation.findOne().sort({ createdAt: -1 });
+  // Find the last auto-generated quotation (only those starting with prefix)
+  const lastQuotation = await Quotation.findOne({
+    quotationNumber: { $regex: `^${prefix}\\d+$` }
+  }).sort({ createdAt: -1 });
 
   let nextNumber = 1;
 
@@ -597,6 +600,7 @@ exports.generateQuotationNumber = async () => {
 
   return `${prefix}${paddedNumber}`;
 };
+
 
 // ---------------- SAVE QUOTATION ----------------
 exports.saveQuotation = async (req, res) => {
