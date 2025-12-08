@@ -1801,195 +1801,194 @@ function App() {
     // };
 
 
-    const handleSave = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            showModal("Authentication missing.", "ALERT");
-            return;
-        }
+const handleSave = async () => {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    showModal("Authentication missing.", "ALERT");
+    return;
+  }
 
-        // ✅ Validation: check correct field
-        const currentNumber = quotation ? billDetails.quotationNumber : billDetails.invoiceNumber;
-        if (!currentNumber || currentNumber.trim() === "") {
-            showModal("Please provide a quotation/invoice number.", "ALERT");
-            return;
-        }
+  const currentNumber = quotation ? billDetails.quotationNumber : billDetails.invoiceNumber;
+  if (!currentNumber || currentNumber.trim() === "") {
+    showModal("Please provide a quotation/invoice number.", "ALERT");
+    return;
+  }
 
-        try {
-            setSaveLoading(true);
+  try {
+    setSaveLoading(true);
 
-            const docKey = quotation ? "quotationNumber" : "invoiceNumber";
-            const valueKey = quotation ? "quotationValue" : "invoiceValue";
+    const docKey = quotation ? "quotationNumber" : "invoiceNumber";
+    const valueKey = quotation ? "quotationValue" : "invoiceValue";
+    const safeDate = billDetails.documentDate || new Date().toISOString().split("T")[0];
 
-            const safeDate = billDetails.documentDate || new Date().toISOString().split("T")[0];
-
-            const body = {
-                billTO: billDetails.billTO,
-                customerAddress: billDetails.customerAddress,
-                customerGSTIN: billDetails.customerGSTIN,
-                items: billDetails.items,
-                sgst,
-                cgst,
-                taxableValue,
-                SGSTAmount: SGST,
-                CGSTAmount: CGST,
-                [valueKey]: invoiceValue,
-                [docKey]: currentNumber.trim(),   // ✅ send correct number
-                originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
-                documentDate: safeDate,
-            };
-
-            const url = quotation
-                ? `${BASE_URL}/api/quotation/save`
-                : `${BASE_URL}/api/invoice/save`;
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(body)
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
-                showModal(`${quotation ? "Quotation" : "Invoice"} saved → ${savedNumber}`);
-
-                setIsEditing(true);
-                setIsEditingNumber(false);
-                setOriginalQuotationNumber(savedNumber);
-
-                setBillDetails(prev => ({
-                    ...prev,
-                    [quotation ? "quotationNumber" : "invoiceNumber"]: savedNumber, // ✅ update correct field
-                    documentDate: safeDate
-                }));
-            } else {
-                showModal(`Save Error: ${data.error}`);
-            }
-        } catch (error) {
-            console.error(error);
-            showModal("Save failed.");
-        } finally {
-            setSaveLoading(false);
-        }
+    const body = {
+      billTO: billDetails.billTO,
+      customerAddress: billDetails.customerAddress,
+      customerGSTIN: billDetails.customerGSTIN,
+      items: billDetails.items,
+      sgst,
+      cgst,
+      taxableValue,
+      SGSTAmount: SGST,
+      CGSTAmount: CGST,
+      [valueKey]: invoiceValue,
+      [docKey]: currentNumber.trim(),
+      originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+      documentDate: safeDate,
     };
 
+    const url = quotation
+      ? `${BASE_URL}/api/quotation/save`
+      : `${BASE_URL}/api/invoice/save`;
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const savedNumber = data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
+      showModal(`${quotation ? "Quotation" : "Invoice"} saved → ${savedNumber}`);
+
+      setIsEditing(true);
+      setIsEditingNumber(false);
+      setOriginalQuotationNumber(savedNumber);
+
+      setBillDetails(prev => ({
+        ...prev,
+        [quotation ? "quotationNumber" : "invoiceNumber"]: savedNumber, // ✅ update correct field
+        documentDate: safeDate
+      }));
+    } else {
+      showModal(`Save Error: ${data.error}`);
+    }
+  } catch (error) {
+    console.error(error);
+    showModal("Save failed.");
+  } finally {
+    setSaveLoading(false);
+  }
+};
 
 
 
     // --- UPDATE (Modified to send originalQuotationNumber) ---
-    const handleUpdate = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            showModal("Authentication missing.", "ALERT");
-            return;
-        }
+const handleUpdate = async () => {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    showModal("Authentication missing.", "ALERT");
+    return;
+  }
 
-        try {
-            setSaveLoading(true);
+  try {
+    setSaveLoading(true);
 
-            const docKey = invoice ? "invoiceNumber" : "quotationNumber";
-            const valueKey = invoice ? "invoiceValue" : "quotationValue";
-            const url = `${BASE_URL}/api/${invoice ? "invoice/update" : "quotation/update"}`;
+    const docKey = invoice ? "invoiceNumber" : "quotationNumber";
+    const valueKey = invoice ? "invoiceValue" : "quotationValue";
+    const url = `${BASE_URL}/api/${invoice ? "invoice/update" : "quotation/update"}`;
 
-            const body = {
-                [docKey]: invoice ? billDetails.invoiceNumber : billDetails.quotationNumber,
-                originalQuotationNumber: originalQuotationNumber || (invoice ? billDetails.invoiceNumber : billDetails.quotationNumber),
-
-                billTO: billDetails.billTO,
-                customerAddress: billDetails.customerAddress,
-                customerGSTIN: billDetails.customerGSTIN,
-                items: billDetails.items,
-                sgst,
-                cgst,
-                taxableValue,
-                SGSTAmount: SGST,
-                CGSTAmount: CGST,
-                [valueKey]: invoiceValue,
-                associatedQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
-                documentDate: billDetails.documentDate,
-            };
-
-            const res = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(body)
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                showModal(`${invoice ? "Invoice" : "Quotation"} Updated Successfully`);
-                setOriginalQuotationNumber(billDetails.quotationNumber);
-            } else {
-                showModal(`Update Error: ${data.error}`);
-            }
-        } catch (error) {
-            console.error(error);
-            showModal("Update failed.");
-        } finally {
-            setSaveLoading(false);
-        }
+    const body = {
+      [docKey]: invoice ? billDetails.invoiceNumber : billDetails.quotationNumber,
+      originalQuotationNumber: originalQuotationNumber || (invoice ? billDetails.invoiceNumber : billDetails.quotationNumber),
+      billTO: billDetails.billTO,
+      customerAddress: billDetails.customerAddress,
+      customerGSTIN: billDetails.customerGSTIN,
+      items: billDetails.items,
+      sgst,
+      cgst,
+      taxableValue,
+      SGSTAmount: SGST,
+      CGSTAmount: CGST,
+      [valueKey]: invoiceValue,
+      associatedQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
+      documentDate: billDetails.documentDate,
     };
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showModal(`${invoice ? "Invoice" : "Quotation"} Updated Successfully`);
+      setOriginalQuotationNumber(invoice ? billDetails.invoiceNumber : billDetails.quotationNumber);
+    } else {
+      showModal(`Update Error: ${data.error}`);
+    }
+  } catch (error) {
+    console.error(error);
+    showModal("Update failed.");
+  } finally {
+    setSaveLoading(false);
+  }
+};
+
 
 
     // --- DELETE (Updated for deleteLoading) ---
-    const performActualDelete = async () => {
-        const docType = invoice ? "Invoice" : "Quotation";
-        const documentNumber = originalQuotationNumber || (invoice ? billDetails.invoiceNumber : billDetails.quotationNumber);
+const performActualDelete = async () => {
+  const docType = invoice ? "Invoice" : "Quotation";
+  const documentNumber = originalQuotationNumber || (invoice ? billDetails.invoiceNumber : billDetails.quotationNumber);
+  const token = localStorage.getItem('authToken');
 
-        const token = localStorage.getItem('authToken');
+  try {
+    setDeleteLoading(true);
 
-        try {
-            setDeleteLoading(true);
+    const url = `${BASE_URL}/api/${invoice ? "invoice/delete" : "quotation/delete"}/${documentNumber}`;
 
-            const url = `${BASE_URL}/api/${invoice ? "invoice/delete" : "quotation/delete"}/${documentNumber}`;
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+    });
 
-            const response = await fetch(url, {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-            });
+    const data = await response.json();
 
-            const data = await response.json();
+    if (response.ok && data.success) {
+      showModal(`${docType} #${documentNumber} deleted successfully!`);
 
-            if (response.ok && data.success) {
-                showModal(`${docType} #${documentNumber} deleted successfully!`);
+      setBillDetails(prev => ({
+        ...prev,
+        billTO: "",
+        customerAddress: "",
+        customerGSTIN: "",
+        items: [],
+        associatedQuotationNumber: "",
+        documentDate: new Date().toISOString().split("T")[0],
+        quotationNumber: "",
+        invoiceNumber: "", // ✅ reset after delete
+      }));
 
-                setBillDetails(prev => ({
-                    ...prev,
-                    billTO: "",
-                    customerAddress: "",
-                    customerGSTIN: "",
-                    items: [],
-                    associatedQuotationNumber: "",
-                    documentDate: new Date().toISOString().split("T")[0],
-                }));
+      setSGST(false);
+      setCGST(false);
+      setIsEditing(false);
+      setOriginalQuotationNumber(null);
+      generateUniqueNumber();
+    } else {
+      showModal(`Delete Error: ${data.error}`);
+    }
+  } catch (err) {
+    console.error('Error deleting data:', err);
+    showModal('Delete failed.');
+  } finally {
+    setDeleteLoading(false);
+  }
+};
 
-                setSGST(false);
-                setCGST(false);
-                setIsEditing(false);
-                setOriginalQuotationNumber(null);
-                generateUniqueNumber();
-            } else {
-                showModal(`Delete Error: ${data.error}`);
-            }
-        } catch (err) {
-            console.error('Error deleting data:', err);
-            showModal('Delete failed.');
-        } finally {
-            setDeleteLoading(false);
-        }
-    };
 
     // Load Quotation details specifically into Invoice Form
     const loadQuotationForInvoice = async (docNumber) => {
@@ -2218,6 +2217,7 @@ function App() {
                 associatedQuotationNumber: "",
                 documentDate: new Date().toISOString().split("T")[0],
                 quotationNumber: "", // ✅ Reset to empty, will be filled by generateUniqueNumber
+                invoiceNumber:"",
             }));
 
             setSGST(false);
@@ -2228,11 +2228,14 @@ function App() {
             setSearchNumber("");
             setIsEditing(false);
             setIsEditingNumber(false); // ✅ Reset edit state
-
-            // ✅ Generate number after state reset
-            setTimeout(() => generateUniqueNumber(), 100);
         }
     }, [invoice, quotation, isAuthenticated, userRole]);
+
+    useEffect(() => {
+  if (isAuthenticated && userRole === "user") {
+    generateUniqueNumber();
+  }
+}, [invoice, quotation, isAuthenticated, userRole, generateUniqueNumber]);
 
 
     // ----------------- LOGIN SCREEN -----------------

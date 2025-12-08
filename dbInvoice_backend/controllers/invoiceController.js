@@ -2,6 +2,36 @@
 const invoice = require("../models/invoice");
 const Invoice = require("../models/invoice");
 
+// Generate invoice number
+// exports.generateInvoiceNumber = async (req, res) => {
+//   try {
+//     const today = new Date();
+//     const day = String(today.getDate()).padStart(2, "0"); // e.g., 14
+//     const todayPrefix = `INVDB${day}`;                    // INVDB14
+
+//     // 1. Fetch LAST saved invoice overall (not by date)
+//     const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+
+//     let runningNumber = 1;
+
+//     if (lastInvoice) {
+//       const last2Digits = parseInt(lastInvoice.invoiceNumber.slice(-2)); 
+//       runningNumber = last2Digits + 1;
+//     }
+
+//     // 2. Combine prefix + running number
+//     const padded = String(runningNumber).padStart(2, "0");  
+//     const newInvoiceNumber = `${todayPrefix}${padded}`;
+
+//     res.status(200).json({ 
+//       success: true, 
+//       invoiceNumber: newInvoiceNumber 
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
 
 // exports.generateInvoiceNumber = async (req, res) => {
 //   try {
@@ -29,25 +59,64 @@ const Invoice = require("../models/invoice");
 //   }
 // };
 
-exports.generateInvoiceNumber = async () => {
-  const prefix = "INVDB";
+exports.generateInvoiceNumber = async (req, res) => {
+  try {
+    const prefix = "INVDB";
 
-  // Only consider auto-generated invoices (those starting with prefix)
-  const lastInvoice = await Invoice.findOne({
-    invoiceNumber: { $regex: `^${prefix}\\d+$` }
-  }).sort({ createdAt: -1 });
+    // Only consider auto-generated invoices (those starting with prefix)
+    const lastInvoice = await Invoice.findOne({
+      invoiceNumber: { $regex: `^${prefix}\\d+$` }
+    }).sort({ createdAt: -1 });
 
-  let nextNumber = 1;
+    let nextNumber = 1;
 
-  if (lastInvoice) {
-    const lastCode = lastInvoice.invoiceNumber;
-    const numericPart = parseInt(lastCode.replace(prefix, ""));
-    nextNumber = numericPart + 1;
+    if (lastInvoice) {
+      const lastCode = lastInvoice.invoiceNumber;
+      const numericPart = parseInt(lastCode.replace(prefix, ""));
+      nextNumber = numericPart + 1;
+    }
+
+    const padded = String(nextNumber).padStart(3, "0");
+    const newInvoiceNumber = `${prefix}${padded}`;
+
+    // ✅ Send response back to client
+    return res.status(200).json({
+      success: true,
+      invoiceNumber: newInvoiceNumber
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
-
-  const padded = String(nextNumber).padStart(3, "0");
-  return `${prefix}${padded}`;
 };
+
+
+
+
+// exports.saveInvoice = async (req, res) => {
+//   try {
+//     const data = req.body;
+
+//     // Auto add total price inside items
+//     data.items = data.items.map(item => ({
+//       ...item,
+//       total: item.quantity * item.unitPrice
+//     }));
+
+//     const invoice = new Invoice(data);
+//     await invoice.save();
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Invoice saved successfully",
+//       invoice
+//     });
+//   } catch (err) {
+//     return res.status(500).json({
+//       success: false,
+//       error: err.message
+//     });
+//   }
+// };
 
 
 
@@ -111,6 +180,7 @@ exports.generateInvoiceNumber = async () => {
 //     });
 //   }
 // };
+
 
 exports.saveInvoice = async (req, res) => {
   try {
