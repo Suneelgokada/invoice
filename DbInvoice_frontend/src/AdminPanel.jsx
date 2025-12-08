@@ -4058,7 +4058,7 @@ function AdminPanel({ onLogout }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [saveLoading, setSaveLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-
+    const [isEditingNumber, setIsEditingNumber] = useState(false);
     const [chartData, setChartData] = useState({
         monthlyData: [],
         weeklyData: [],
@@ -4073,6 +4073,7 @@ function AdminPanel({ onLogout }) {
         customerAddress: "",
         customerGSTIN: "",
         quotationNumber: "",
+        invoiceNumber: "",
         associatedQuotationNumber: "",
         items: [],
         documentDate: new Date().toISOString().split("T")[0], // Added from App.jsx
@@ -4221,7 +4222,9 @@ function AdminPanel({ onLogout }) {
             if (data.success) {
                 setBillDetails(prev => ({
                     ...prev,
-                    quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber
+                    quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber,
+                    [quotation ? "quotationNumber" : "invoiceNumber"]:
+                     quotation ? data.quotationNumber : data.invoiceNumber
                 }));
             } else {
                 showNotification(`Number generation failed: ${data.error || 'API Error'}`, 'error');
@@ -4238,8 +4241,9 @@ function AdminPanel({ onLogout }) {
             setBillDetails(prev => ({
                 ...prev,
                 billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
-                quotationNumber: "", // Clear number to signal regeneration
-                documentDate: new Date().toISOString().split("T")[0], // Reset date
+                quotationNumber: "", 
+                invoiceNumber:"",
+                documentDate: new Date().toISOString().split("T")[0],
             }));
             setSGST(false);
             setCGST(false);
@@ -4342,7 +4346,7 @@ function AdminPanel({ onLogout }) {
         try {
             setFormLoading(true);
 
-            const documentNumber = billDetails.quotationNumber;
+            const documentNumber = invoice ? billDetails.invoiceNumber : billDetails.quotationNumber;
             const docKey = invoice ? "invoiceNumber" : "quotationNumber";
             const valueKey = invoice ? "invoiceValue" : "quotationValue";
 
@@ -4391,7 +4395,8 @@ function AdminPanel({ onLogout }) {
     // Fallback function for deletion to wrap around performActualDeleteForm
     const handleDeleteForm = () => {
         const docType = invoice ? "Invoice" : "Quotation";
-        const documentNumber = billDetails.quotationNumber;
+       const documentNumber = invoice ? billDetails.invoiceNumber : billDetails.quotationNumber; // ✅ FIXED
+
         if (!documentNumber) {
             showNotification("Cannot delete. Document number is missing.", 'ALERT');
             return;
@@ -4438,7 +4443,7 @@ function AdminPanel({ onLogout }) {
                 SGSTAmount,
                 CGSTAmount,
                 [valueKey]: invoiceValue,
-                [docKey]: billDetails.quotationNumber,
+                 [docKey]: invoice ? billDetails.invoiceNumber : billDetails.quotationNumber,
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
                 documentDate: safeDocumentDate,
             };
@@ -4472,7 +4477,7 @@ function AdminPanel({ onLogout }) {
                 setIsEditing(true);
                 setBillDetails(prev => ({
                     ...prev,
-                    quotationNumber: savedNumber,
+                    [docKey]: savedNumber,
                     documentDate: safeDocumentDate
                 }));
                 fetchAdminData(token);
@@ -4521,6 +4526,7 @@ function AdminPanel({ onLogout }) {
                     customerGSTIN: "",
                     quotationNumber: "", // ఇది ఖచ్చితంగా క్లియర్ చేయాలి
                     associatedQuotationNumber: "",
+                    invoiceNumber: "",  
                     items: [],
                     documentDate: new Date().toISOString().split("T")[0],
                 });
@@ -5334,13 +5340,29 @@ const renderChangePassword = () => (
                         </p>
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5">
                             <h1 className="font-medium">{invoice ? "Invoice" : "Quotation"} Number:</h1>
-                            <input
-                                type="text"
-                                value={billDetails.quotationNumber}
-                                placeholder={`Auto-generated`}
-                                className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md bg-indigo-100 font-bold text-indigo-800 w-full md:w-auto"
-                                readOnly
-                            />
+                            <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={invoice ? billDetails.invoiceNumber : billDetails.quotationNumber}
+                                        readOnly={!isEditingNumber}
+                                        onChange={(e) =>
+                                            setBillDetails({
+                                                ...billDetails,
+                                                [invoice ? "invoiceNumber" : "quotationNumber"]: e.target.value,
+                                            })
+                                        }
+                                        className={`outline-none rounded px-2 py-1 border border-blue-500 
+                                        ${isEditingNumber ? "bg-white" : "bg-gray-100"}`}
+                                    />
+
+                                    {/* Edit / Lock button */}
+                                    <button
+                                        onClick={() => setIsEditingNumber(!isEditingNumber)}
+                                        className="px-3 py-1 text-sm rounded bg-indigo-500 text-white hover:bg-indigo-600"
+                                    >
+                                        {isEditingNumber ? "Lock" : "Edit"}
+                                    </button>
+                                </div>
                             <h1 className="font-medium">Date:</h1>
                             <input
                                 type="date"
@@ -5348,6 +5370,7 @@ const renderChangePassword = () => (
                                 onChange={(e) => setBillDetails({ ...billDetails, documentDate: e.target.value })}
                                 className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full md:w-auto"
                             />
+
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
                             {invoice && (
