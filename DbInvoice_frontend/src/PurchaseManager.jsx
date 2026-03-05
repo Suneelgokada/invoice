@@ -303,7 +303,7 @@ import { PlusSquare, Loader, ClipboardList } from 'lucide-react';
 
 // --- Configuration ---
 // The component receives BASE_URL as a prop but keeps the original definition here
-const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com/`;
+const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
 function PurchaseManager({ showNotification, token }) {
     
