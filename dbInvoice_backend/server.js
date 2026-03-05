@@ -479,6 +479,39 @@
 
 
 
+// require("dotenv").config();
+
+// const express = require("express");
+// const mongoose = require("mongoose");
+// const cors = require("cors");
+
+// const invoiceRoutes = require("./routes/invoiceRoutes");
+// const purchaseRoutes = require('./routes/purchaseRoutes');
+// const quotationRoutes=require('./routes/quotationRoutes');
+// const adminRoutes = require("./routes/adminRoutes");
+// const app = express();
+
+// // Middlewares
+// app.use(cors());
+// app.use(express.json());
+
+// // Routes
+// app.use("/api/invoice",  invoiceRoutes);
+// app.use("/api/quotation", require("./routes/quotationRoutes"));
+// app.use("/api/admin", adminRoutes);
+// app.use('/api/admin', purchaseRoutes);
+
+
+// // MongoDB Connection
+// mongoose
+//   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => {
+//     console.log("MongoDB Connected Successfully");
+//     app.listen(5000, () => console.log("Server running on port 5000"));
+//   })
+//   .catch((err) => console.log("MongoDB Error:", err));
+
+
 require("dotenv").config();
 
 const express = require("express");
@@ -486,29 +519,37 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const invoiceRoutes = require("./routes/invoiceRoutes");
-const purchaseRoutes = require('./routes/purchaseRoutes');
-const quotationRoutes=require('./routes/quotationRoutes');
+const purchaseRoutes = require("./routes/purchaseRoutes");
+const quotationRoutes = require("./routes/quotationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+
 const app = express();
 
-// Middlewares
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/invoice",  invoiceRoutes);
-app.use("/api/quotation", require("./routes/quotationRoutes"));
-app.use("/api/admin", adminRoutes);
-app.use('/api/admin', purchaseRoutes);
+// Test Route (important)
+app.get("/", (req, res) => {
+  res.send("Invoice Backend Running 🚀");
+});
 
+// Routes
+app.use("/api/invoice", invoiceRoutes);
+app.use("/api/quotation", quotationRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/admin", purchaseRoutes);
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB Connected Successfully");
-    app.listen(5000, () => console.log("Server running on port 5000"));
+
+    const PORT = process.env.PORT || 5000;
+
+    app.listen(PORT, () =>
+      console.log(`Server running on port ${PORT}`)
+    );
   })
   .catch((err) => console.log("MongoDB Error:", err));
-
-
