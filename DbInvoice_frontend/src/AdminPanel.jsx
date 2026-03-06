@@ -4983,76 +4983,76 @@ function AdminPanel({ onLogout }) {
     // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
     // ----------------------------------------------------
 
-    const totalInvoiceValue = invoices.reduce((sum, item) => sum + (item.invoiceValue || 0), 0);
-    const totalQuotationValue = quotations.reduce((sum, item) => sum + (item.quotationValue || 0), 0); // Corrected to use quotationValue
-    const totalQuotationCount = quotations.length;
-    const adminListData = activeTab === 'invoices' ? invoices : quotations;
+  // --- Derived State & Render Helpers ---
 
-    const renderDashboard = () => (
-        <div className="max-w-7xl mx-auto px-6 py-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">📊 Dashboard Overview</h2>
-            {dashboardError && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm border-l-4 border-red-500 shadow-md">
-                    <AlertTriangle size={20} className="inline mr-2" />
-                    {dashboardError}
-                </div>
-            )}
-            {dashboardLoading ? (
-                <div className="text-center py-20">
-                    <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium">Loading stats...</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-xl border-l-4 border-blue-500">
-                        <p className="text-gray-500 font-medium">Total Invoices</p>
-                        <p className="text-3xl font-bold text-blue-800">{invoices.length}</p>
-                        <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalInvoiceValue.toFixed(2)}</p>
-                    </div>
+// ✅ Only sum actual Invoices
+const totalInvoiceValue = invoices.reduce((sum, item) => sum + (Number(item.invoiceValue) || 0), 0);
 
-                    <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
-                        <p className="text-gray-500 font-medium">Total Quotations</p>
-                        <p className="text-3xl font-bold text-green-800">{quotations.length}</p>
-                        <p className="text-sm text-gray-400 mt-1">Total Value: ₹{totalQuotationValue.toFixed(2)}</p>
-                    </div>
+// ✅ Only sum actual Quotations (Note: quotationValue field use chestunnam)
+const totalQuotationValue = quotations.reduce((sum, item) => sum + (Number(item.quotationValue) || 0), 0);
 
-                    <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
-                        <p className="text-gray-500 font-medium">Total Documents</p>
-                        <p className="text-3xl font-bold text-purple-800">{invoices.length + totalQuotationCount}</p>
-                        <p className="text-sm text-gray-400 mt-1">Invoices + Quotations</p>
-                    </div>
+const totalQuotationCount = quotations.length;
+const adminListData = activeTab === 'invoices' ? invoices : quotations;
+
+const renderDashboard = () => (
+    <div className="max-w-7xl mx-auto px-6 py-8">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">📊 Dashboard Overview</h2>
+        
+        {dashboardError && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm border-l-4 border-red-500 shadow-md">
+                <AlertTriangle size={20} className="inline mr-2" /> {dashboardError}
+            </div>
+        )}
+
+        {dashboardLoading ? (
+            <div className="text-center py-20">
+                <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
+                <p className="text-gray-600 font-medium">Loading stats...</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* 💳 CARD 1: Monthly Revenue (Invoices ONLY) */}
+                <div className="bg-white p-6 rounded-xl shadow-xl border-l-4 border-blue-500">
+                    <p className="text-gray-500 font-medium text-sm">Monthly Revenue</p>
+                    <p className="text-3xl font-bold text-blue-800 mt-1">₹{totalInvoiceValue.toFixed(2)}</p>
+                    <p className="text-xs text-blue-400 mt-2 font-semibold uppercase">{invoices.length} Paid/Billed Invoices</p>
                 </div>
-            )}
-            <div className="bg-white p-6 rounded-lg shadow-xl">
-                <h3 className="text-xl font-semibold mb-4 text-indigo-700">Quick Actions</h3>
-                <div className="flex flex-wrap gap-4">
-                    <button
-                        onClick={() => setActiveTab('newBill')}
-                        className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 flex items-center transition font-medium"
-                    >
-                        <PlusSquare size={18} className="mr-2" /> Create New Bill
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('invoices')}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center transition font-medium"
-                    >
-                        <Receipt size={18} className="mr-2" /> View Invoices
-                    </button>
+
+                {/* 📋 CARD 2: Estimated Pipeline (Quotations ONLY) */}
+                <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
+                    <p className="text-gray-500 font-medium text-sm">Estimated Pipeline</p>
+                    <p className="text-3xl font-bold text-green-800 mt-1">₹{totalQuotationValue.toFixed(2)}</p>
+                    <p className="text-xs text-green-400 mt-2 font-semibold uppercase">{quotations.length} Pending Quotations</p>
+                </div>
+
+                {/* 📂 CARD 3: Operational Activity (Count) */}
+                <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
+                    <p className="text-gray-500 font-medium text-sm">Total Transactions</p>
+                    <p className="text-3xl font-bold text-purple-800 mt-1">{invoices.length + quotations.length}</p>
+                    <p className="text-xs text-purple-400 mt-2 font-semibold uppercase">Total Documents Generated</p>
                 </div>
             </div>
-            {/* Analytics Charts */}
-            <div className="mt-10">
-                {chartData.loading ? (
-                    <p className="text-center text-gray-500">Loading analytics...</p>
-                ) : chartData.error ? (
-                    <p className="text-center text-red-500">{chartData.error}</p>
-                ) : (
-                    <AnalyticsDashboard chartData={chartData} />
-                )}
-            </div>
+        )}
 
+        {/* Action Buttons */}
+        <div className="bg-white p-6 rounded-lg shadow-xl border border-indigo-50">
+            <h3 className="text-lg font-semibold mb-4 text-indigo-700">Quick Operations</h3>
+            <div className="flex flex-wrap gap-4">
+                <button onClick={() => setActiveTab('newBill')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 flex items-center transition shadow-lg"><PlusSquare size={18} className="mr-2" /> Create New Bill</button>
+                <button onClick={() => setActiveTab('invoices')} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center transition shadow-lg"><Receipt size={18} className="mr-2" /> View Sales History</button>
+            </div>
         </div>
-    );
+
+        {/* Charts Section */}
+        <div className="mt-10">
+            {chartData.loading ? (
+                <p className="text-center text-gray-500 py-10">Syncing analytics data...</p>
+            ) : (
+                <AnalyticsDashboard chartData={chartData} />
+            )}
+        </div>
+    </div>
+);
 
     const renderDataList = (type) => {
         const isInvoice = type === "invoices";
