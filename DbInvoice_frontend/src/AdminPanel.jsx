@@ -5686,40 +5686,50 @@ const renderChangePassword = () => (
         </button>
     );
 
-    const Sidebar = () => (
-        <div className={`
-            fixed top-0 left-0 w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 transform transition-transform duration-300 ease-in-out h-screen
-            md:fixed md:translate-x-0 md:flex md:top-0 md:h-screen 
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            hide-on-print
-        `}>
-            <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
-                <span className="text-indigo-300">Admin Portal
-                </span>
-                <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1">
-                    <X size={24} />
-                </button>
-            </div>
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                <SidebarItem icon={Home} label="Dashboard" tab="dashboard" />
-                <SidebarItem icon={Receipt} label="Invoices List" tab="invoices" />
-                <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
-                <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
-                <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
-                <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
-                
-            </nav>
-            <div className="p-4 border-t border-indigo-800">
-                <button
-                    onClick={onLogout}
-                    className="w-full flex items-center p-3 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
-                >
-                    <LogOut size={18} className="mr-3" />
-                    Logout
-                </button>
-            </div>
-        </div>
-    );
+ const Sidebar = () => (
+  <div
+    className={`
+      fixed top-0 left-0 w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 
+      transform transition-transform duration-300 ease-in-out h-screen
+      md:fixed md:translate-x-0 md:flex md:top-0 md:h-screen
+      ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+      hide-on-print
+    `}
+  >
+    {/* HEADER */}
+    <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
+      <span className="text-indigo-300">Admin Portal</span>
+
+      <button
+        onClick={() => setIsSidebarOpen(false)}
+        className="md:hidden p-1"
+      >
+        <X size={24} />
+      </button>
+    </div>
+
+    {/* NAVIGATION (SCROLLABLE AREA) */}
+    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <SidebarItem icon={Home} label="Dashboard" tab="dashboard" />
+      <SidebarItem icon={Receipt} label="Invoices List" tab="invoices" />
+      <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
+      <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
+      <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
+      <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
+    </nav>
+
+    {/* LOGOUT BUTTON - ALWAYS BOTTOM */}
+    <div className="p-4 border-t border-indigo-800 mt-auto">
+      <button
+        onClick={onLogout}
+        className="w-full flex items-center justify-center p-3 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
+      >
+        <LogOut size={18} className="mr-3" />
+        Logout
+      </button>
+    </div>
+  </div>
+);
 
     const renderContent = () => {
         const token = localStorage.getItem('authToken');
