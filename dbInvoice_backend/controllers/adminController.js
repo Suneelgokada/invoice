@@ -271,87 +271,76 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
-// 6. Analytics (Invoices + Quotations)
-// 6. Analytics (Invoices + Quotations)
 exports.analytics = async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth();
 
+    const startOfYear = new Date(currentYear, 0, 1);
+    const endOfYear = new Date(currentYear + 1, 0, 1);
+
+    // Database nundi records fetch chestunnam
     const invoices = await Invoice.find({
-      createdAt: {
-        $gte: new Date(currentYear, 0, 1),
-        $lt: new Date(currentYear + 1, 0, 1)
-      }
+      createdAt: { $gte: startOfYear, $lt: endOfYear }
     });
 
     const quotations = await Quotation.find({
-      createdAt: {
-        $gte: new Date(currentYear, 0, 1),
-        $lt: new Date(currentYear + 1, 0, 1)
-      }
+      createdAt: { $gte: startOfYear, $lt: endOfYear }
     });
 
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
     const monthlyData = monthNames.map((month, index) => {
       const monthInvoices = invoices.filter(inv => new Date(inv.createdAt).getMonth() === index);
       const monthQuotations = quotations.filter(quot => new Date(quot.createdAt).getMonth() === index);
 
-      const totalValue = monthInvoices.reduce((sum, inv) => sum + (inv.invoiceValue || 0), 0) +
-                         monthQuotations.reduce((sum, quot) => sum + (quot.quotationValue || 0), 0);
+      // ✅ REVENUE FIX: Only sum records that have 'invoiceValue' AND start with 'INVDB'
+      const invoiceTotal = monthInvoices.reduce((sum, inv) => {
+        const isRealInvoice = inv.invoiceNumber && inv.invoiceNumber.startsWith("INVDB");
+        return sum + (isRealInvoice ? (parseFloat(inv.invoiceValue) || 0) : 0);
+      }, 0);
 
       return {
         month,
         invoices: monthInvoices.length,
         quotations: monthQuotations.length,
-        totalValue: parseFloat(totalValue.toFixed(2))
+        totalValue: parseFloat(invoiceTotal.toFixed(2)) // This will strictly match your card value
       };
     });
 
+    // ---------------- WEEKLY DATA ----------------
     const startOfMonth = new Date(currentYear, currentMonth, 1);
     const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
-
-    const currentMonthInvoices = invoices.filter(inv => {
-      const date = new Date(inv.createdAt);
-      return date >= startOfMonth && date <= endOfMonth;
-    });
-
-    const currentMonthQuotations = quotations.filter(quot => {
-      const date = new Date(quot.createdAt);
-      return date >= startOfMonth && date <= endOfMonth;
-    });
 
     const weeklyData = [];
     const weeksInMonth = Math.ceil(endOfMonth.getDate() / 7);
 
     for (let week = 0; week < weeksInMonth; week++) {
       const weekStart = new Date(currentYear, currentMonth, week * 7 + 1);
-      const weekEnd = new Date(currentYear, currentMonth, (week + 1) * 7);
+      const weekEnd = new Date(currentYear, currentMonth, Math.min((week + 1) * 7, endOfMonth.getDate()));
 
-      const weekInvoices = currentMonthInvoices.filter(inv => {
+      const weekInvoices = invoices.filter(inv => {
         const date = new Date(inv.createdAt);
-        return date >= weekStart && date <= weekEnd;
+        return date >= weekStart && date <= weekEnd && inv.invoiceNumber && inv.invoiceNumber.startsWith("INVDB");
       });
 
-      const weekQuotations = currentMonthQuotations.filter(quot => {
-        const date = new Date(quot.createdAt);
-        return date >= weekStart && date <= weekEnd;
-      });
-
-      const totalValue = weekInvoices.reduce((sum, inv) => sum + (inv.invoiceValue || 0), 0) +
-                         weekQuotations.reduce((sum, quot) => sum + (quot.quotationValue || 0), 0);
+      const weekInvoiceTotal = weekInvoices.reduce((sum, inv) => sum + (parseFloat(inv.invoiceValue) || 0), 0);
 
       weeklyData.push({
         week: `Week ${week + 1}`,
         invoices: weekInvoices.length,
-        quotations: weekQuotations.length,
-        totalValue: parseFloat(totalValue.toFixed(2))
+        quotations: quotations.filter(q => {
+          const d = new Date(q.createdAt);
+          return d >= weekStart && d <= weekEnd;
+        }).length,
+        totalValue: parseFloat(weekInvoiceTotal.toFixed(2))
       });
     }
 
     res.json({ success: true, monthlyData, weeklyData });
+
   } catch (error) {
     console.error("Analytics fetch error:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch analytics data" });
+    res.status(500).json({ success: false, error: "Failed to fetch analytics" });
   }
 };

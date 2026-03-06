@@ -59,38 +59,67 @@ const Invoice = require("../models/invoice");
 //   }
 // };
 
-exports.generateInvoiceNumber = async (req, res) => {
-  try {
-    const prefix = "INVDB";
+// exports.generateInvoiceNumber = async (req, res) => {
+//   try {
+//     const prefix = "INVDB";
 
-    // Only consider auto-generated invoices (those starting with prefix)
-    const lastInvoice = await Invoice.findOne({
-      invoiceNumber: { $regex: `^${prefix}\\d+$` }
-    }).sort({ createdAt: -1 });
+//     // Only consider auto-generated invoices (those starting with prefix)
+//     const lastInvoice = await Invoice.findOne({
+//       invoiceNumber: { $regex: `^${prefix}\\d+$` }
+//     }).sort({ createdAt: -1 });
 
-    let nextNumber = 1;
+//     let nextNumber = 1;
 
-    if (lastInvoice) {
-      const lastCode = lastInvoice.invoiceNumber;
-      const numericPart = parseInt(lastCode.replace(prefix, ""));
-      nextNumber = numericPart + 1;
-    }
+//     if (lastInvoice) {
+//       const lastCode = lastInvoice.invoiceNumber;
+//       const numericPart = parseInt(lastCode.replace(prefix, ""));
+//       nextNumber = numericPart + 1;
+//     }
 
-    const padded = String(nextNumber).padStart(3, "0");
-    const newInvoiceNumber = `${prefix}${padded}`;
+//     const padded = String(nextNumber).padStart(3, "0");
+//     const newInvoiceNumber = `${prefix}${padded}`;
 
-    // ✅ Send response back to client
-    return res.status(200).json({
-      success: true,
-      invoiceNumber: newInvoiceNumber
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+//     // ✅ Send response back to client
+//     return res.status(200).json({
+//       success: true,
+//       invoiceNumber: newInvoiceNumber
+//     });
+//   } catch (err) {
+//     return res.status(500).json({ success: false, error: err.message });
+//   }
+// };
+
+const getNextInvoiceNumber = async () => {
+
+  const prefix = "INVDB";
+
+  const lastInvoice = await Invoice.findOne({
+    invoiceNumber: { $regex: `^${prefix}\\d+$` }
+  }).sort({ createdAt: -1 });
+
+  let nextNumber = 1;
+
+  if (lastInvoice) {
+    const numericPart = parseInt(lastInvoice.invoiceNumber.replace(prefix,""));
+    nextNumber = numericPart + 1;
   }
+
+  return `${prefix}${String(nextNumber).padStart(3,"0")}`;
 };
+exports.generateInvoiceNumber = async (req,res)=>{
+  try{
 
+    const invoiceNumber = await getNextInvoiceNumber();
 
+    res.json({
+      success:true,
+      invoiceNumber
+    })
 
+  }catch(err){
+    res.status(500).json({success:false,error:err.message})
+  }
+}
 
 // exports.saveInvoice = async (req, res) => {
 //   try {
@@ -182,56 +211,114 @@ exports.generateInvoiceNumber = async (req, res) => {
 // };
 
 
-exports.saveInvoice = async (req, res) => {
-  try {
+// exports.saveInvoice = async (req, res) => {
+//   try {
+//     let data = req.body;
+//     let finalInvoiceNumber = data.invoiceNumber?.trim();
+
+//     if (finalInvoiceNumber) {
+//       const exists = await Invoice.findOne({ invoiceNumber: finalInvoiceNumber });
+//       if (exists) {
+//         return res.status(400).json({
+//           success: false,
+//           error: `Invoice Number ${finalInvoiceNumber} already exists.`,
+//         });
+//       }
+//     } else {
+//       finalInvoiceNumber = await exports.generateInvoiceNumber();
+//     }
+
+//     // Auto calculate totals
+//     data.items = (data.items || []).map(item => ({
+//       ...item,
+//       total: Number(item.quantity) * Number(item.unitPrice),
+//     }));
+
+//     const invoice = new Invoice({
+//       invoiceNumber: finalInvoiceNumber,
+//       billTO: data.billTO,
+//       customerAddress: data.customerAddress,
+//       customerGSTIN: data.customerGSTIN || "",
+//       items: data.items,
+//       sgst: Boolean(data.sgst),
+//       cgst: Boolean(data.cgst),
+//       SGSTAmount: Number(data.SGSTAmount) || 0,
+//       CGSTAmount: Number(data.CGSTAmount) || 0,
+//       taxableValue: Number(data.taxableValue) || 0,
+//       invoiceValue: Number(data.invoiceValue) || 0,
+//       paymentType: data.paymentType || "",
+//       note: data.note || "",
+//     });
+
+//     await invoice.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice saved successfully",
+//       invoice,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// };
+
+exports.saveInvoice = async (req,res)=>{
+  try{
+
     let data = req.body;
+
     let finalInvoiceNumber = data.invoiceNumber?.trim();
 
-    if (finalInvoiceNumber) {
-      const exists = await Invoice.findOne({ invoiceNumber: finalInvoiceNumber });
-      if (exists) {
+    if(finalInvoiceNumber){
+
+      const exists = await Invoice.findOne({invoiceNumber:finalInvoiceNumber});
+
+      if(exists){
         return res.status(400).json({
-          success: false,
-          error: `Invoice Number ${finalInvoiceNumber} already exists.`,
-        });
+          success:false,
+          error:`Invoice Number ${finalInvoiceNumber} already exists`
+        })
       }
-    } else {
-      finalInvoiceNumber = await exports.generateInvoiceNumber();
+
+    }else{
+
+      finalInvoiceNumber = await getNextInvoiceNumber();
+
     }
 
-    // Auto calculate totals
-    data.items = (data.items || []).map(item => ({
+    data.items = (data.items || []).map(item=>({
       ...item,
-      total: Number(item.quantity) * Number(item.unitPrice),
-    }));
+      total:Number(item.quantity) * Number(item.unitPrice)
+    }))
 
     const invoice = new Invoice({
-      invoiceNumber: finalInvoiceNumber,
-      billTO: data.billTO,
-      customerAddress: data.customerAddress,
-      customerGSTIN: data.customerGSTIN || "",
-      items: data.items,
-      sgst: Boolean(data.sgst),
-      cgst: Boolean(data.cgst),
-      SGSTAmount: Number(data.SGSTAmount) || 0,
-      CGSTAmount: Number(data.CGSTAmount) || 0,
-      taxableValue: Number(data.taxableValue) || 0,
-      invoiceValue: Number(data.invoiceValue) || 0,
-      paymentType: data.paymentType || "",
-      note: data.note || "",
-    });
+      invoiceNumber:finalInvoiceNumber,
+      billTO:data.billTO,
+      customerAddress:data.customerAddress,
+      customerGSTIN:data.customerGSTIN || "",
+      items:data.items,
+      sgst:Boolean(data.sgst),
+      cgst:Boolean(data.cgst),
+      SGSTAmount:Number(data.SGSTAmount)||0,
+      CGSTAmount:Number(data.CGSTAmount)||0,
+      taxableValue:Number(data.taxableValue)||0,
+      invoiceValue:Number(data.invoiceValue)||0,
+      paymentType:data.paymentType || "",
+      note:data.note || ""
+    })
 
-    await invoice.save();
+    await invoice.save()
 
     res.status(201).json({
-      success: true,
-      message: "Invoice saved successfully",
-      invoice,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+      success:true,
+      message:"Invoice saved successfully",
+      invoice
+    })
+
+  }catch(err){
+    res.status(500).json({success:false,error:err.message})
   }
-};
+}
 
 exports.fetchInvoiceByNumber = async (req, res) => {
     try {
