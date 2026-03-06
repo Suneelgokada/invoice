@@ -1446,7 +1446,7 @@
 
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import AdminPanel from "./AdminPanel";
+import AdminPanel from "./components/pages/AdminPanel";
 import ReactToPrint from "react-to-print";
 
 import {
@@ -1721,87 +1721,6 @@ function App() {
         else handleSave();
     };
 
-
-    // --- SAVE (Custom number support) ---
-    // const handleSave = async () => {
-    //     const token = localStorage.getItem('authToken');
-    //     if (!token) {
-    //         showModal("Authentication missing.", "ALERT");
-    //         return;
-    //     }
-
-    //     // ✅ Validation: Check if quotation number exists
-    //     if (!billDetails.quotationNumber || billDetails.quotationNumber.trim() === "") {
-    //         showModal("Please provide a quotation/invoice number.", "ALERT");
-    //         return;
-    //     }
-
-    //     try {
-    //         setSaveLoading(true);
-
-    //         const docKey = quotation ? "quotationNumber" : "invoiceNumber";
-    //         const valueKey = quotation ? "quotationValue" : "invoiceValue";
-
-    //         const safeDate =
-    //             billDetails.documentDate || new Date().toISOString().split("T")[0];
-
-    //         const body = {
-    //             billTO: billDetails.billTO,
-    //             customerAddress: billDetails.customerAddress,
-    //             customerGSTIN: billDetails.customerGSTIN,
-    //             items: billDetails.items,
-    //             sgst,  // ✅ Optional - can be true or false
-    //             cgst,  // ✅ Optional - can be true or false
-    //             taxableValue,
-    //             SGSTAmount: SGST,
-    //             CGSTAmount: CGST,
-    //             [valueKey]: invoiceValue,
-    //             [docKey]: quotation
-    //                 ? billDetails.quotationNumber.trim()
-    //                 : billDetails.invoiceNumber.trim(),
-    //             // ✅ Send custom or auto number
-    //             originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
-    //             documentDate: safeDate,
-    //         };
-
-    //         const url = quotation
-    //             ? `${BASE_URL}/api/quotation/save`
-    //             : `${BASE_URL}/api/invoice/save`;
-
-    //         const res = await fetch(url, {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //                 "Authorization": `Bearer ${token}`
-    //             },
-    //             body: JSON.stringify(body)
-    //         });
-
-    //         const data = await res.json();
-
-    //         if (data.success) {
-    //             const savedNumber =
-    //                 data.invoice?.invoiceNumber || data.quotation?.quotationNumber;
-    //             showModal(`${quotation ? "Quotation" : "Invoice"} saved → ${savedNumber}`);
-
-    //             setIsEditing(true);
-    //             setIsEditingNumber(false); // ✅ Lock after save
-    //             setOriginalQuotationNumber(savedNumber);
-    //             setBillDetails(prev => ({
-    //                 ...prev,
-    //                 quotationNumber: savedNumber,
-    //                 documentDate: safeDate
-    //             }));
-    //         } else {
-    //             showModal(`Save Error: ${data.error}`);
-    //         }
-    //     } catch (error) {
-    //         console.error(error);
-    //         showModal("Save failed.");
-    //     } finally {
-    //         setSaveLoading(false);
-    //     }
-    // };
 
 
     const handleSave = async () => {
@@ -2943,3 +2862,5 @@ function App() {
 }
 
 export default App;
+
+

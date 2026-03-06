@@ -3924,7 +3924,7 @@ import {
     Menu
 } from 'lucide-react';
 import ReactToPrint from "react-to-print";
-import AnalyticsDashboard from "./AnalyticsDashboard";
+import AnalyticsDashboard from "./components/charts/AnalyticsDashboard";
 import PurchaseManager from './PurchaseManager';
 
 
@@ -5686,7 +5686,7 @@ const renderChangePassword = () => (
         </button>
     );
 
- const Sidebar = () => (
+const Sidebar = () => (
   <div
     className={`
       fixed top-0 left-0 w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 
@@ -5708,17 +5708,21 @@ const renderChangePassword = () => (
       </button>
     </div>
 
-    {/* NAVIGATION (SCROLLABLE AREA) */}
+    {/* NAVIGATION */}
     <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
       <SidebarItem icon={Home} label="Dashboard" tab="dashboard" />
       <SidebarItem icon={Receipt} label="Invoices List" tab="invoices" />
       <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
       <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
       <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
-      <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
+
+      {/* Mobile gap for logout visibility */}
+      <div className="mb-16 md:mb-0">
+        <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
+      </div>
     </nav>
 
-    {/* LOGOUT BUTTON - ALWAYS BOTTOM */}
+    {/* LOGOUT BUTTON */}
     <div className="p-4 border-t border-indigo-800 mt-auto">
       <button
         onClick={onLogout}

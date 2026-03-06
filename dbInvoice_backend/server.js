@@ -522,7 +522,7 @@ const invoiceRoutes = require("./routes/invoiceRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
 const quotationRoutes = require("./routes/quotationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
+const clientRoutes = require("./routes/clientRoutes");
 const app = express();
 
 // Middleware
@@ -539,7 +539,7 @@ app.use("/api/invoice", invoiceRoutes);
 app.use("/api/quotation", quotationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", purchaseRoutes);
-
+app.use("/api/clients", clientRoutes);
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
