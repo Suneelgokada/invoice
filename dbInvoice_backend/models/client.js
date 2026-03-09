@@ -29,6 +29,37 @@ const clientSchema = new mongoose.Schema(
   renewalDate: {
     type: Date,
     required: true
+  },
+
+  // 🔵 Additional optional fields
+  projectName: {
+    type: String,
+    default: ""
+  },
+
+  workType: {
+    type: String,
+    default: ""
+  },
+
+  domainDetails: {
+    type: String,
+    default: ""
+  },
+
+  credentials: {
+    type: String,
+    default: ""
+  },
+
+  comment: {
+    type: String,
+    default: ""
+  },
+
+  referredBy: {
+    type: String,
+    default: ""
   }
 
 },

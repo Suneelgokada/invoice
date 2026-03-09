@@ -539,7 +539,7 @@ app.use("/api/invoice", invoiceRoutes);
 app.use("/api/quotation", quotationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", purchaseRoutes);
-app.use("/api/clients", clientRoutes);
+app.use("/api/admin", clientRoutes);
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)

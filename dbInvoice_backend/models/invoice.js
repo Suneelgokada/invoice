@@ -19,6 +19,15 @@ const ItemSchema = new mongoose.Schema({
 const InvoiceSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true, unique: true },
 
+    clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Client"
+  },
+
+  phone: {
+    type: String,
+    required: true
+  },
   // Recipient Details
   billTO: { type: String, required: true },
   customerAddress: { type: String, required: true },

@@ -1,7 +1,11 @@
 const Client = require("../models/client");
+const Invoice = require("../models/invoice");
 const XLSX = require("xlsx");
 
 
+// ============================
+// CREATE CLIENT
+// ============================
 exports.createClient = async (req, res) => {
 
   try {
@@ -15,6 +19,15 @@ exports.createClient = async (req, res) => {
       });
     }
 
+    const normalizedPhone = phone.trim();
+
+    if (!/^[0-9]{10}$/.test(normalizedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid phone number"
+      });
+    }
+
     if (new Date(renewalDate) <= new Date(joinDate)) {
       return res.status(400).json({
         success: false,
@@ -22,35 +35,34 @@ exports.createClient = async (req, res) => {
       });
     }
 
-    const existingClient = await Client.findOne({ phone });
+    const exists = await Client.findOne({ phone: normalizedPhone });
 
-    if (existingClient) {
+    if (exists) {
       return res.status(409).json({
         success: false,
-        message: "Client with this phone already exists"
+        message: "Client already exists with this phone"
       });
     }
 
-    const client = new Client({
+    const client = await Client.create({
       name,
-      phone,
+      phone: normalizedPhone,
       address,
       joinDate,
       renewalDate
     });
 
-    await client.save();
-
     res.status(201).json({
       success: true,
-      data: client
+      message: "Client created successfully",
+      client
     });
 
-  } catch (error) {
+  } catch (err) {
 
     res.status(500).json({
       success: false,
-      message: error.message
+      message: err.message
     });
 
   }
@@ -59,22 +71,45 @@ exports.createClient = async (req, res) => {
 
 
 
+// ============================
+// GET CLIENTS (PAGINATION + SEARCH)
+// ============================
 exports.getClients = async (req, res) => {
 
   try {
 
-    const clients = await Client.find().sort({ createdAt: -1 });
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search || "";
+
+    const query = {
+      name: { $regex: search, $options: "i" }
+    };
+
+    const skip = (page - 1) * limit;
+
+    const clients = await Client.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Client.countDocuments(query);
 
     res.json({
       success: true,
-      data: clients
+      data: clients,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit)
+      }
     });
 
-  } catch (error) {
+  } catch (err) {
 
     res.status(500).json({
       success: false,
-      message: error.message
+      message: err.message
     });
 
   }
@@ -83,6 +118,135 @@ exports.getClients = async (req, res) => {
 
 
 
+// ============================
+// CLIENT PROFILE (CLIENT + INVOICES)
+// ============================
+exports.getClientProfile = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const client = await Client.findById(id);
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    const invoices = await Invoice.find({ clientId: id })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      client,
+      invoices
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+
+};
+
+
+
+// ============================
+// UPDATE CLIENT DETAILS
+// ============================
+exports.updateClient = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const client = await Client.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true }
+    );
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client updated successfully",
+      client
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+
+};
+
+
+
+// ============================
+// DELETE CLIENT (SAFE DELETE)
+// ============================
+exports.deleteClient = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const invoiceExists = await Invoice.findOne({ clientId: id });
+
+    if (invoiceExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Client has invoices. Cannot delete."
+      });
+    }
+
+    const client = await Client.findByIdAndDelete(id);
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client deleted successfully"
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+
+};
+
+
+
+// ============================
+// EXPORT CLIENTS TO EXCEL
+// ============================
 exports.exportClients = async (req, res) => {
 
   try {
@@ -93,8 +257,8 @@ exports.exportClients = async (req, res) => {
       Name: c.name,
       Phone: c.phone,
       Address: c.address,
-      JoinDate: c.joinDate,
-      RenewalDate: c.renewalDate
+      JoinDate: new Date(c.joinDate).toLocaleDateString(),
+      RenewalDate: new Date(c.renewalDate).toLocaleDateString()
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -115,42 +279,11 @@ exports.exportClients = async (req, res) => {
 
     res.send(buffer);
 
-  } catch (error) {
+  } catch (err) {
 
     res.status(500).json({
       success: false,
-      message: error.message
-    });
-
-  }
-
-};
-
-exports.deleteClient = async (req, res) => {
-
-  try {
-
-    const { id } = req.params;
-
-    const client = await Client.findByIdAndDelete(id);
-
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: "Client not found"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Client deleted successfully"
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-      success: false,
-      message: error.message
+      message: err.message
     });
 
   }
