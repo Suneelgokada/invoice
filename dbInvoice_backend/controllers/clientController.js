@@ -125,3 +125,34 @@ exports.exportClients = async (req, res) => {
   }
 
 };
+
+exports.deleteClient = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const client = await Client.findByIdAndDelete(id);
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client deleted successfully"
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
