@@ -164,6 +164,7 @@ function AdminPanel({ onLogout }) {
 
     const [billDetails, setBillDetails] = useState({
         billTO: "",
+        phone: "",
         customerAddress: "",
         customerGSTIN: "",
         quotationNumber: "",
@@ -293,13 +294,6 @@ function AdminPanel({ onLogout }) {
     }, [activeTab, fetchAnalyticsData]);
 
 
-
-
-    // ----------------------------------------------------
-    // --- 2. Billing Form Logic (REPLACED/UPDATED with App.jsx Logic) ---
-    // ----------------------------------------------------
-
-    // Generate unique invoice/quotation number (FROM App.jsx)
     const generateUniqueNumber = useCallback(async () => {
         const token = localStorage.getItem('authToken');
         if (!token) { return; }
@@ -318,7 +312,7 @@ function AdminPanel({ onLogout }) {
                     ...prev,
                     quotationNumber: quotation ? data.quotationNumber : data.invoiceNumber,
                     [quotation ? "quotationNumber" : "invoiceNumber"]:
-                     quotation ? data.quotationNumber : data.invoiceNumber
+                        quotation ? data.quotationNumber : data.invoiceNumber
                 }));
             } else {
                 showNotification(`Number generation failed: ${data.error || 'API Error'}`, 'error');
@@ -335,8 +329,8 @@ function AdminPanel({ onLogout }) {
             setBillDetails(prev => ({
                 ...prev,
                 billTO: "", customerAddress: "", customerGSTIN: "", items: [], associatedQuotationNumber: "",
-                quotationNumber: "", 
-                invoiceNumber:"",
+                quotationNumber: "",
+                invoiceNumber: "",
                 documentDate: new Date().toISOString().split("T")[0],
             }));
             setSGST(false);
@@ -432,56 +426,74 @@ function AdminPanel({ onLogout }) {
         setBillDetails({ ...billDetails, items: removedArray });
     };
 
-    // Handle Update Logic (FROM App.jsx - renamed to handleUpdate)
     const handleUpdate = async () => {
+
         const token = localStorage.getItem('authToken');
-        if (!token) { showNotification("Authentication token missing. Cannot update.", 'error'); return; }
+        if (!token) {
+            showNotification("Authentication token missing.", 'error');
+            return;
+        }
 
         try {
+
             setFormLoading(true);
 
-            const documentNumber = invoice ? billDetails.invoiceNumber : billDetails.quotationNumber;
+            const documentNumber = invoice
+                ? billDetails.invoiceNumber
+                : billDetails.quotationNumber;
+
             const docKey = invoice ? "invoiceNumber" : "quotationNumber";
             const valueKey = invoice ? "invoiceValue" : "quotationValue";
 
-            // ⭐ UPDATED API URL: /api/invoice/update or /api/quotation/update
-            const urlPath = invoice ? "invoice/update" : "quotation/update";
-            const url = `${BASE_URL}/api/admin/${urlPath}`; // Router code has /api/admin prefix for this route: router.get("/update", verifyToken, authorizeRole("admin"), invoiceController.updateInvoice);
+            const url = `${BASE_URL}/api/admin/${invoice ? "invoice/update" : "quotation/update"}`;
 
             const body = {
                 [docKey]: documentNumber,
+
+                originalQuotationNumber: documentNumber,
+
                 billTO: billDetails.billTO,
+                phone: billDetails.phone,
                 customerAddress: billDetails.customerAddress,
                 customerGSTIN: billDetails.customerGSTIN,
+
                 items: billDetails.items,
+
                 sgst: sgst,
                 cgst: cgst,
+
                 taxableValue: taxableValue,
                 SGSTAmount: SGSTAmount,
                 CGSTAmount: CGSTAmount,
+
                 [valueKey]: invoiceValue,
-                originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
-                documentDate: billDetails.documentDate,
+
+                documentDate: billDetails.documentDate
             };
 
             const res = await fetch(url, {
-                method: "PUT", // Assuming your backend update route is PUT, though the router shows GET. Using PUT as it's semantically correct for an update.
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(body)
             });
 
             const data = await res.json();
 
             if (data.success) {
-                showNotification(`${invoice ? "Invoice" : "Quotation"} #${documentNumber} updated successfully!`, 'success');
+                showNotification(`${invoice ? "Invoice" : "Quotation"} updated successfully`, 'success');
                 fetchAdminData(token);
             } else {
-                showNotification(`Update Error: ${data.message || data.error}`, 'error');
+                showNotification(`Update Error: ${data.error}`, 'error');
             }
+
         } catch (err) {
             console.error(err);
             showNotification("Unexpected error during update.", 'error');
-        } finally {
+        }
+        finally {
             setFormLoading(false);
         }
     };
@@ -489,7 +501,7 @@ function AdminPanel({ onLogout }) {
     // Fallback function for deletion to wrap around performActualDeleteForm
     const handleDeleteForm = () => {
         const docType = invoice ? "Invoice" : "Quotation";
-       const documentNumber = invoice ? billDetails.invoiceNumber : billDetails.quotationNumber; // ✅ FIXED
+        const documentNumber = invoice ? billDetails.invoiceNumber : billDetails.quotationNumber; // ✅ FIXED
 
         if (!documentNumber) {
             showNotification("Cannot delete. Document number is missing.", 'ALERT');
@@ -528,6 +540,7 @@ function AdminPanel({ onLogout }) {
 
             const body = {
                 billTO: billDetails.billTO,
+                phone: billDetails.phone,
                 customerAddress: billDetails.customerAddress,
                 customerGSTIN: billDetails.customerGSTIN,
                 items: billDetails.items,
@@ -537,7 +550,7 @@ function AdminPanel({ onLogout }) {
                 SGSTAmount,
                 CGSTAmount,
                 [valueKey]: invoiceValue,
-                 [docKey]: invoice ? billDetails.invoiceNumber : billDetails.quotationNumber,
+                [docKey]: invoice ? billDetails.invoiceNumber : billDetails.quotationNumber,
                 originalQuotationNumber: invoice ? billDetails.associatedQuotationNumber : null,
                 documentDate: safeDocumentDate,
             };
@@ -620,7 +633,7 @@ function AdminPanel({ onLogout }) {
                     customerGSTIN: "",
                     quotationNumber: "", // ఇది ఖచ్చితంగా క్లియర్ చేయాలి
                     associatedQuotationNumber: "",
-                    invoiceNumber: "",  
+                    invoiceNumber: "",
                     items: [],
                     documentDate: new Date().toISOString().split("T")[0],
                 });
@@ -653,7 +666,8 @@ function AdminPanel({ onLogout }) {
 
 
     // Fetch invoice/quotation by number (FROM App.jsx)
-    // --- handleSearch function (Around line 522) ---
+    // --- 
+    //  function (Around line 522) ---
 
     // Fetch invoice/quotation by number (FROM App.jsx)
     // ... (Previous code remains the same up to here)
@@ -770,11 +784,12 @@ function AdminPanel({ onLogout }) {
                     customerAddress: inv.customerAddress,
                     customerGSTIN: inv.customerGSTIN,
                     items: normalizedItems,
-                    quotationNumber: inv.invoiceNumber, // Invoice Number is saved in quotationNumber state temporarily
+                    invoiceNumber: inv.invoiceNumber,   // ✅ CORRECT
                     associatedQuotationNumber: inv.originalQuotationNumber || "",
                     documentDate: (inv.documentDate && inv.documentDate.split("T")[0]) || new Date().toISOString().split("T")[0]
                 }));
-
+                setIsEditing(true);
+                setOriginalQuotationNumber(inv.invoiceNumber);
                 setSGST(inv.sgst || false);
                 setCGST(inv.cgst || false);
                 setIsEditing(true);
@@ -796,35 +811,36 @@ function AdminPanel({ onLogout }) {
     };
 
     // 3. Main Search/Load Handler (For Search Box functionality)
-    const handleSearchOrLoad = async (docNumber) => {
-        // Use searchNumber if docNumber is not explicitly passed (i.e., when clicking the search button)
-        if (typeof docNumber === "object" || !docNumber) {
-            docNumber = searchNumber;
-        }
+    const
+        OrLoad = async (docNumber) => {
+            // Use searchNumber if docNumber is not explicitly passed (i.e., when clicking the search button)
+            if (typeof docNumber === "object" || !docNumber) {
+                docNumber = searchNumber;
+            }
 
-        if (!docNumber) {
-            showNotification("Please enter a document number to search.", "info");
-            return;
-        }
+            if (!docNumber) {
+                showNotification("Please enter a document number to search.", "info");
+                return;
+            }
 
-        // Prioritize the currently selected mode (Invoice or Quotation)
-        if (invoice) {
-            const loaded = await fetchInvoiceByNumber(docNumber);
-            if (loaded) return;
+            // Prioritize the currently selected mode (Invoice or Quotation)
+            if (invoice) {
+                const loaded = await fetchInvoiceByNumber(docNumber);
+                if (loaded) return;
 
-            // If Invoice fails, try Quotation as a fallback (This retains the multi-search capability)
-            await fetchQuotationByNumber(docNumber);
+                // If Invoice fails, try Quotation as a fallback (This retains the multi-search capability)
+                await fetchQuotationByNumber(docNumber);
 
-        } else { // Must be quotation
-            const loaded = await fetchQuotationByNumber(docNumber);
-            if (loaded) return;
+            } else { // Must be quotation
+                const loaded = await fetchQuotationByNumber(docNumber);
+                if (loaded) return;
 
-            // If Quotation fails, try Invoice as a fallback
-            await fetchInvoiceByNumber(docNumber);
-        }
+                // If Quotation fails, try Invoice as a fallback
+                await fetchInvoiceByNumber(docNumber);
+            }
 
-        // If nothing was loaded, the specific fetch functions will handle showing the 'Not Found' notification
-    };
+            // If nothing was loaded, the specific fetch functions will handle showing the 'Not Found' notification
+        };
 
     // 4. Special Function to load Quotation details into Invoice Form 
     const loadQuotationForInvoice = async (docNumber) => {
@@ -1077,76 +1093,76 @@ function AdminPanel({ onLogout }) {
     // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
     // ----------------------------------------------------
 
-  // --- Derived State & Render Helpers ---
+    // --- Derived State & Render Helpers ---
 
-// ✅ Only sum actual Invoices
-const totalInvoiceValue = invoices.reduce((sum, item) => sum + (Number(item.invoiceValue) || 0), 0);
+    // ✅ Only sum actual Invoices
+    const totalInvoiceValue = invoices.reduce((sum, item) => sum + (Number(item.invoiceValue) || 0), 0);
 
-// ✅ Only sum actual Quotations (Note: quotationValue field use chestunnam)
-const totalQuotationValue = quotations.reduce((sum, item) => sum + (Number(item.quotationValue) || 0), 0);
+    // ✅ Only sum actual Quotations (Note: quotationValue field use chestunnam)
+    const totalQuotationValue = quotations.reduce((sum, item) => sum + (Number(item.quotationValue) || 0), 0);
 
-const totalQuotationCount = quotations.length;
-const adminListData = activeTab === 'invoices' ? invoices : quotations;
+    const totalQuotationCount = quotations.length;
+    const adminListData = activeTab === 'invoices' ? invoices : quotations;
 
-const renderDashboard = () => (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">📊 Dashboard Overview</h2>
-        
-        {dashboardError && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm border-l-4 border-red-500 shadow-md">
-                <AlertTriangle size={20} className="inline mr-2" /> {dashboardError}
-            </div>
-        )}
+    const renderDashboard = () => (
+        <div className="max-w-7xl mx-auto px-6 py-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">📊 Dashboard Overview</h2>
 
-        {dashboardLoading ? (
-            <div className="text-center py-20">
-                <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">Loading stats...</p>
-            </div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* 💳 CARD 1: Monthly Revenue (Invoices ONLY) */}
-                <div className="bg-white p-6 rounded-xl shadow-xl border-l-4 border-blue-500">
-                    <p className="text-gray-500 font-medium text-sm">Monthly Revenue</p>
-                    <p className="text-3xl font-bold text-blue-800 mt-1">₹{totalInvoiceValue.toFixed(2)}</p>
-                    <p className="text-xs text-blue-400 mt-2 font-semibold uppercase">{invoices.length} Paid/Billed Invoices</p>
+            {dashboardError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm border-l-4 border-red-500 shadow-md">
+                    <AlertTriangle size={20} className="inline mr-2" /> {dashboardError}
                 </div>
-
-                {/* 📋 CARD 2: Estimated Pipeline (Quotations ONLY) */}
-                <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
-                    <p className="text-gray-500 font-medium text-sm">Estimated Pipeline</p>
-                    <p className="text-3xl font-bold text-green-800 mt-1">₹{totalQuotationValue.toFixed(2)}</p>
-                    <p className="text-xs text-green-400 mt-2 font-semibold uppercase">{quotations.length} Pending Quotations</p>
-                </div>
-
-                {/* 📂 CARD 3: Operational Activity (Count) */}
-                <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
-                    <p className="text-gray-500 font-medium text-sm">Total Transactions</p>
-                    <p className="text-3xl font-bold text-purple-800 mt-1">{invoices.length + quotations.length}</p>
-                    <p className="text-xs text-purple-400 mt-2 font-semibold uppercase">Total Documents Generated</p>
-                </div>
-            </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="bg-white p-6 rounded-lg shadow-xl border border-indigo-50">
-            <h3 className="text-lg font-semibold mb-4 text-indigo-700">Quick Operations</h3>
-            <div className="flex flex-wrap gap-4">
-                <button onClick={() => setActiveTab('newBill')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 flex items-center transition shadow-lg"><PlusSquare size={18} className="mr-2" /> Create New Bill</button>
-                <button onClick={() => setActiveTab('invoices')} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center transition shadow-lg"><Receipt size={18} className="mr-2" /> View Sales History</button>
-            </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="mt-10">
-            {chartData.loading ? (
-                <p className="text-center text-gray-500 py-10">Syncing analytics data...</p>
-            ) : (
-                <AnalyticsDashboard chartData={chartData} />
             )}
+
+            {dashboardLoading ? (
+                <div className="text-center py-20">
+                    <Loader size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium">Loading stats...</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* 💳 CARD 1: Monthly Revenue (Invoices ONLY) */}
+                    <div className="bg-white p-6 rounded-xl shadow-xl border-l-4 border-blue-500">
+                        <p className="text-gray-500 font-medium text-sm">Monthly Revenue</p>
+                        <p className="text-3xl font-bold text-blue-800 mt-1">₹{totalInvoiceValue.toFixed(2)}</p>
+                        <p className="text-xs text-blue-400 mt-2 font-semibold uppercase">{invoices.length} Paid/Billed Invoices</p>
+                    </div>
+
+                    {/* 📋 CARD 2: Estimated Pipeline (Quotations ONLY) */}
+                    <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-green-500">
+                        <p className="text-gray-500 font-medium text-sm">Estimated Pipeline</p>
+                        <p className="text-3xl font-bold text-green-800 mt-1">₹{totalQuotationValue.toFixed(2)}</p>
+                        <p className="text-xs text-green-400 mt-2 font-semibold uppercase">{quotations.length} Pending Quotations</p>
+                    </div>
+
+                    {/* 📂 CARD 3: Operational Activity (Count) */}
+                    <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
+                        <p className="text-gray-500 font-medium text-sm">Total Transactions</p>
+                        <p className="text-3xl font-bold text-purple-800 mt-1">{invoices.length + quotations.length}</p>
+                        <p className="text-xs text-purple-400 mt-2 font-semibold uppercase">Total Documents Generated</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="bg-white p-6 rounded-lg shadow-xl border border-indigo-50">
+                <h3 className="text-lg font-semibold mb-4 text-indigo-700">Quick Operations</h3>
+                <div className="flex flex-wrap gap-4">
+                    <button onClick={() => setActiveTab('newBill')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 flex items-center transition shadow-lg"><PlusSquare size={18} className="mr-2" /> Create New Bill</button>
+                    <button onClick={() => setActiveTab('invoices')} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center transition shadow-lg"><Receipt size={18} className="mr-2" /> View Sales History</button>
+                </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="mt-10">
+                {chartData.loading ? (
+                    <p className="text-center text-gray-500 py-10">Syncing analytics data...</p>
+                ) : (
+                    <AnalyticsDashboard chartData={chartData} />
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
 
     const renderDataList = (type) => {
         const isInvoice = type === "invoices";
@@ -1291,95 +1307,95 @@ const renderDashboard = () => (
         );
     };
 
-const renderChangePassword = () => (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* 🔑 Updated H2 title for clarity and professionalism */}
-        <h2 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-            🔑 User Account Management
-        </h2>
-        
-        {/* ⭐ NEW/UPDATED PROFESSIONAL DESCRIPTION */}
-        <p className="text-gray-600 mb-6 font-medium text-lg border-b pb-4">
-            Administrator Password Reset Utility. Use this form to securely reset the password for any specific user account via their Username.
-        </p>
+    const renderChangePassword = () => (
+        <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* 🔑 Updated H2 title for clarity and professionalism */}
+            <h2 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                🔑 User Account Management
+            </h2>
 
-        <div className="bg-white p-8 rounded-xl shadow-xl max-w-lg mx-auto">
-            {/* The previous <p> tag was here and has been moved/integrated above. */}
-            
-            <form
-                className="space-y-6"
-                // ⭐ UNCHANGED: Call handleSubmitPasswordChange with isAdmin=true and targetUsername
-                onSubmit={(e) => 
-                    handleSubmitPasswordChange(e, true, null, passwordForm.usernameToReset)
-                }
-            >
-                {/* 1. USERNAME INPUT (New Field) */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Target Username</label>
-                    <input
-                        type="text"
-                        name="usernameToReset"
-                        // ⭐ STATE BINDING: Assuming you add 'usernameToReset' to passwordForm state
-                        value={passwordForm.usernameToReset || ''} 
-                        onChange={(e) => {
-                            // Using handlePasswordChange to manage state, setting a new field
-                            handlePasswordChange({ target: { name: 'usernameToReset', value: e.target.value } });
-                        }}
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        placeholder="Enter Username to reset"
-                        disabled={passwordLoading}
-                    />
-                </div>
-                
-                {/* 2. NEW PASSWORD INPUT (UNCHANGED) */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">New Password</label>
-                    <input
-                        type="password"
-                        name="newPassword"
-                        value={passwordForm.newPassword}
-                        onChange={handlePasswordChange}
-                        required
-                        minLength={6}
-                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        placeholder="New Password (min 6 characters)"
-                        disabled={passwordLoading}
-                    />
-                </div>
-                
-                {/* 3. CONFIRM NEW PASSWORD INPUT (UNCHANGED) */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                    <input
-                        type="password"
-                        name="confirmNewPassword"
-                        value={passwordForm.confirmNewPassword}
-                        onChange={handlePasswordChange}
-                        required
-                        minLength={6}
-                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        placeholder="Confirm New Password"
-                        disabled={passwordLoading}
-                    />
-                </div>
-                
-                <button
-                    type="submit"
-                    className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md disabled:bg-indigo-400"
-                    // ⭐ UNCHANGED DISABLED LOGIC
-                    disabled={passwordLoading || !passwordForm.usernameToReset || !passwordForm.newPassword || !passwordForm.confirmNewPassword}
+            {/* ⭐ NEW/UPDATED PROFESSIONAL DESCRIPTION */}
+            <p className="text-gray-600 mb-6 font-medium text-lg border-b pb-4">
+                Administrator Password Reset Utility. Use this form to securely reset the password for any specific user account via their Username.
+            </p>
+
+            <div className="bg-white p-8 rounded-xl shadow-xl max-w-lg mx-auto">
+                {/* The previous <p> tag was here and has been moved/integrated above. */}
+
+                <form
+                    className="space-y-6"
+                    // ⭐ UNCHANGED: Call handleSubmitPasswordChange with isAdmin=true and targetUsername
+                    onSubmit={(e) =>
+                        handleSubmitPasswordChange(e, true, null, passwordForm.usernameToReset)
+                    }
                 >
-                    {passwordLoading ? (
-                        <Loader size={20} className="animate-spin mx-auto" />
-                    ) : (
-                        'Reset Password for User'
-                    )}
-                </button>
-            </form>
+                    {/* 1. USERNAME INPUT (New Field) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Target Username</label>
+                        <input
+                            type="text"
+                            name="usernameToReset"
+                            // ⭐ STATE BINDING: Assuming you add 'usernameToReset' to passwordForm state
+                            value={passwordForm.usernameToReset || ''}
+                            onChange={(e) => {
+                                // Using handlePasswordChange to manage state, setting a new field
+                                handlePasswordChange({ target: { name: 'usernameToReset', value: e.target.value } });
+                            }}
+                            required
+                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            placeholder="Enter Username to reset"
+                            disabled={passwordLoading}
+                        />
+                    </div>
+
+                    {/* 2. NEW PASSWORD INPUT (UNCHANGED) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">New Password</label>
+                        <input
+                            type="password"
+                            name="newPassword"
+                            value={passwordForm.newPassword}
+                            onChange={handlePasswordChange}
+                            required
+                            minLength={6}
+                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            placeholder="New Password (min 6 characters)"
+                            disabled={passwordLoading}
+                        />
+                    </div>
+
+                    {/* 3. CONFIRM NEW PASSWORD INPUT (UNCHANGED) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                        <input
+                            type="password"
+                            name="confirmNewPassword"
+                            value={passwordForm.confirmNewPassword}
+                            onChange={handlePasswordChange}
+                            required
+                            minLength={6}
+                            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            placeholder="Confirm New Password"
+                            disabled={passwordLoading}
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md disabled:bg-indigo-400"
+                        // ⭐ UNCHANGED DISABLED LOGIC
+                        disabled={passwordLoading || !passwordForm.usernameToReset || !passwordForm.newPassword || !passwordForm.confirmNewPassword}
+                    >
+                        {passwordLoading ? (
+                            <Loader size={20} className="animate-spin mx-auto" />
+                        ) : (
+                            'Reset Password for User'
+                        )}
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
-);
+    );
 
     // --- REPLACED: renderNewBillForm (FROM App.jsx UI) ---
     const renderNewBillForm = () => (
@@ -1402,7 +1418,9 @@ const renderChangePassword = () => (
                             />
                             <button
                                 // ⭐ UPDATED FUNCTIONALITY: Using the priority/fallback search handler
-                                onClick={() => handleSearchOrLoad(searchNumber)}
+                                onClick={() =>
+
+                                    OrLoad(searchNumber)}
                                 disabled={formLoading}
                                 className="w-full sm:w-auto bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600 disabled:opacity-50 font-medium whitespace-nowrap"
                             >
@@ -1435,28 +1453,28 @@ const renderChangePassword = () => (
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-start flex-wrap gap-5">
                             <h1 className="font-medium">{invoice ? "Invoice" : "Quotation"} Number:</h1>
                             <div className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        value={invoice ? billDetails.invoiceNumber : billDetails.quotationNumber}
-                                        readOnly={!isEditingNumber}
-                                        onChange={(e) =>
-                                            setBillDetails({
-                                                ...billDetails,
-                                                [invoice ? "invoiceNumber" : "quotationNumber"]: e.target.value,
-                                            })
-                                        }
-                                        className={`outline-none rounded px-2 py-1 border border-blue-500 
+                                <input
+                                    type="text"
+                                    value={invoice ? billDetails.invoiceNumber : billDetails.quotationNumber}
+                                    readOnly={!isEditingNumber}
+                                    onChange={(e) =>
+                                        setBillDetails({
+                                            ...billDetails,
+                                            [invoice ? "invoiceNumber" : "quotationNumber"]: e.target.value,
+                                        })
+                                    }
+                                    className={`outline-none rounded px-2 py-1 border border-blue-500 
                                         ${isEditingNumber ? "bg-white" : "bg-gray-100"}`}
-                                    />
+                                />
 
-                                    {/* Edit / Lock button */}
-                                    <button
-                                        onClick={() => setIsEditingNumber(!isEditingNumber)}
-                                        className="px-3 py-1 text-sm rounded bg-indigo-500 text-white hover:bg-indigo-600"
-                                    >
-                                        {isEditingNumber ? "Lock" : "Edit"}
-                                    </button>
-                                </div>
+                                {/* Edit / Lock button */}
+                                <button
+                                    onClick={() => setIsEditingNumber(!isEditingNumber)}
+                                    className="px-3 py-1 text-sm rounded bg-indigo-500 text-white hover:bg-indigo-600"
+                                >
+                                    {isEditingNumber ? "Lock" : "Edit"}
+                                </button>
+                            </div>
                             <h1 className="font-medium">Date:</h1>
                             <input
                                 type="date"
@@ -1464,6 +1482,8 @@ const renderChangePassword = () => (
                                 onChange={(e) => setBillDetails({ ...billDetails, documentDate: e.target.value })}
                                 className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full md:w-auto"
                             />
+
+
 
 
                             {/* Quotation Number Input for Invoice Linking (VISIBLE ONLY IN INVOICE MODE) */}
@@ -1493,7 +1513,9 @@ const renderChangePassword = () => (
                         </div>
                     </div>
 
-                    {/* 2. Recipient Details */}
+                    {/* idhi reciepent details */}
+
+                    {/*                    
                     <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 hide-on-print">
                         <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
                             2. Recipient Details
@@ -1503,6 +1525,72 @@ const renderChangePassword = () => (
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Address</h1><input type="text" placeholder="Enter Biller Address" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerAddress} onChange={(e) => setBillDetails({ ...billDetails, customerAddress: e.target.value })} /></div>
                             <div className="flex items-start justify-center flex-col gap-2 w-full"><h1 className="font-medium">Customer GSTIN</h1><input type="text" placeholder="Enter Customer GSTIN" className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full" value={billDetails.customerGSTIN} onChange={(e) => setBillDetails({ ...billDetails, customerGSTIN: e.target.value })} /></div>
                         </div>
+                    </div> */}
+
+                    {/* 2. Recipient Details */}
+                    <div className="border-dashed border-2 border-slate-400 rounded-xl my-7 p-5 bg-gray-50 hide-on-print">
+
+                        <p className="pb-3 text-xl font-semibold uppercase text-blue-600">
+                            2. Recipient Details
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+
+                            <div className="flex items-start justify-center flex-col gap-2 w-full">
+                                <h1 className="font-medium">Bill TO</h1>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Biller Details"
+                                    className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
+                                    value={billDetails.billTO}
+                                    onChange={(e) =>
+                                        setBillDetails({ ...billDetails, billTO: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-center flex-col gap-2 w-full">
+                                <h1 className="font-medium">Phone</h1>
+                                <input
+                                    type="tel"
+                                    placeholder="Enter Mobile Number"
+                                    maxLength={10}
+                                    className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
+                                    value={billDetails.phone || ""}
+                                    onChange={(e) =>
+                                        setBillDetails({ ...billDetails, phone: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-center flex-col gap-2 w-full">
+                                <h1 className="font-medium">Address</h1>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Biller Address"
+                                    className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
+                                    value={billDetails.customerAddress}
+                                    onChange={(e) =>
+                                        setBillDetails({ ...billDetails, customerAddress: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex items-start justify-center flex-col gap-2 w-full">
+                                <h1 className="font-medium">Customer GSTIN</h1>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Customer GSTIN"
+                                    className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
+                                    value={billDetails.customerGSTIN}
+                                    onChange={(e) =>
+                                        setBillDetails({ ...billDetails, customerGSTIN: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                        </div>
+
                     </div>
 
                     {/* 3. Items Section */}
@@ -1573,7 +1661,13 @@ const renderChangePassword = () => (
                         {/* Save/Update Button */}
                         <button
                             onClick={handleSaveOrUpdate}
-                            disabled={saveLoading || billDetails.items.length === 0 || !billDetails.billTO || !billDetails.customerAddress}
+                            disabled={
+                                saveLoading ||
+                                billDetails.items.length === 0 ||
+                                !billDetails.billTO ||
+                                !billDetails.phone ||
+                                !billDetails.customerAddress
+                            }
                             className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition flex items-center justify-center min-w-[10rem]"
                         >
                             {saveLoading ? <Loader size={20} className="animate-spin" /> : isEditing ? 'Update Document' : 'Save Document'}
@@ -1650,7 +1744,12 @@ const renderChangePassword = () => (
                                     </div>
                                 </div>
                                 <div className="flex justify-between h-10 px-3 sm:px-5 border-t border-black text-sm">
-                                    <p className="font-semibold text-sm sm:text-lg">{invoice ? "Invoice" : "Quotation"} No: <span className="font-normal">{billDetails.quotationNumber}</span></p>
+                                    <p className="font-semibold text-sm sm:text-lg">
+                                        {invoice ? "Invoice" : "Quotation"} No:
+                                        <span className="font-normal">
+                                            {invoice ? billDetails.invoiceNumber : billDetails.quotationNumber}
+                                        </span>
+                                    </p>
                                     <p className='whitespace-nowrap'>Date: <span>{new Date(billDetails.documentDate).toLocaleDateString("en-GB")}</span></p>
                                 </div>
                             </div>
@@ -1780,54 +1879,54 @@ const renderChangePassword = () => (
         </button>
     );
 
-const Sidebar = () => (
-  <div
-    className={`
+    const Sidebar = () => (
+        <div
+            className={`
       fixed top-0 left-0 w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 
       transform transition-transform duration-300 ease-in-out h-screen
       md:fixed md:translate-x-0 md:flex md:top-0 md:h-screen
       ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       hide-on-print
     `}
-  >
-    {/* HEADER */}
-    <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
-      <span className="text-indigo-300">Admin Portal</span>
+        >
+            {/* HEADER */}
+            <div className="p-5 text-2xl font-extrabold border-b border-indigo-800 flex justify-between items-center">
+                <span className="text-indigo-300">Admin Portal</span>
 
-      <button
-        onClick={() => setIsSidebarOpen(false)}
-        className="md:hidden p-1"
-      >
-        <X size={24} />
-      </button>
-    </div>
+                <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="md:hidden p-1"
+                >
+                    <X size={24} />
+                </button>
+            </div>
 
-    {/* NAVIGATION */}
-    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-      <SidebarItem icon={Home} label="Dashboard" tab="dashboard" />
-      <SidebarItem icon={Receipt} label="Invoices List" tab="invoices" />
-      <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
-      <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
-      <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
-      {/* Mobile gap for logout visibility */}
-      <div className="mb-16 md:mb-0">
-        <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
-      </div>
-          <SidebarItem icon={Users} label="Clients" tab="clients" />
-    </nav>
+            {/* NAVIGATION */}
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <SidebarItem icon={Home} label="Dashboard" tab="dashboard" />
+                <SidebarItem icon={Receipt} label="Invoices List" tab="invoices" />
+                <SidebarItem icon={FileText} label="Quotations List" tab="quotations" />
+                <SidebarItem icon={PlusSquare} label="Create New Bill" tab="newBill" />
+                <SidebarItem icon={Lock} label="Change Password" tab="changePassword" />
+                {/* Mobile gap for logout visibility */}
+                <div className="mb-16 md:mb-0">
+                    <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
+                </div>
+                <SidebarItem icon={Users} label="Clients" tab="clients" />
+            </nav>
 
-    {/* LOGOUT BUTTON */}
-    <div className="p-4 border-t border-indigo-800 mt-auto">
-      <button
-        onClick={onLogout}
-        className="w-full flex items-center justify-center p-3 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
-      >
-        <LogOut size={18} className="mr-3" />
-        Logout
-      </button>
-    </div>
-  </div>
-);
+            {/* LOGOUT BUTTON */}
+            <div className="p-4 border-t border-indigo-800 mt-auto">
+                <button
+                    onClick={onLogout}
+                    className="w-full flex items-center justify-center p-3 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
+                >
+                    <LogOut size={18} className="mr-3" />
+                    Logout
+                </button>
+            </div>
+        </div>
+    );
 
     const renderContent = () => {
         const token = localStorage.getItem('authToken');
@@ -1842,22 +1941,22 @@ const Sidebar = () => (
                 return renderNewBillForm();
             case 'changePassword':
                 return renderChangePassword();
-        case 'purchases': 
-  return (
-        <PurchaseManager
-            BASE_URL={BASE_URL}
-            showNotification={showNotification}
-            token={token}
-        />
-    );
-        case 'clients':
-    return (
-        <ClientManager
-            BASE_URL={BASE_URL}
-            showNotification={showNotification}
-            token={token}
-        />
-    );
+            case 'purchases':
+                return (
+                    <PurchaseManager
+                        BASE_URL={BASE_URL}
+                        showNotification={showNotification}
+                        token={token}
+                    />
+                );
+            case 'clients':
+                return (
+                    <ClientManager
+                        BASE_URL={BASE_URL}
+                        showNotification={showNotification}
+                        token={token}
+                    />
+                );
             default:
                 return renderDashboard();
         }

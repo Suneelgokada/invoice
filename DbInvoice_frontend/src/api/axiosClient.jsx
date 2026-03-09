@@ -10,7 +10,6 @@ const api = axios.create({
   withCredentials: false
 });
 
-// Attach JWT token automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("authToken");
 
@@ -20,5 +19,23 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+
+    if (error.response?.status === 401) {
+
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userRole");
+
+      window.location.href = "/"; 
+      // redirect to login automatically
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;

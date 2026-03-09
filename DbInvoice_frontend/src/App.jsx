@@ -1938,7 +1938,7 @@ function App() {
             if (response.ok && result.quotation) {
                 const q = result.quotation;
 
-                const currentInvoiceNumber = billDetails.quotationNumber;
+                const currentInvoiceNumber = billDetails.invoiceNumber;
 
                 const normalizedItems = q.items.map(i => ({
                     description: i.description,
@@ -2157,7 +2157,7 @@ function App() {
         if (isAuthenticated && userRole === "user") {
             generateUniqueNumber();
         }
-    }, [invoice, quotation, isAuthenticated, userRole, generateUniqueNumber]);
+    }, [quotation]);
 
 
     // ----------------- LOGIN SCREEN -----------------
