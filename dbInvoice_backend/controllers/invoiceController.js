@@ -320,99 +320,117 @@ exports.generateInvoiceNumber = async (req,res)=>{
 //   }
 // }
 
-exports.saveInvoice = async (req,res)=>{
-  try{
+exports.saveInvoice = async (req, res) => {
+
+  try {
 
     let data = req.body;
 
-        if(!data.phone){
+    if (!data.phone) {
       return res.status(400).json({
-        success:false,
-        error:"Phone number is required"
-      })
+        success: false,
+        error: "Phone number is required"
+      });
     }
+
     data.phone = data.phone.trim();
-    // 🔹 STEP 1 → Check client by phone
+
+    // STEP 1 → Find client
     let client = await Client.findOne({ phone: data.phone });
 
-    // 🔹 STEP 2 → Create client if not exists
-    if(!client){
+    // STEP 2 → Create client if not exists
+    if (!client) {
+
+      const joinDate = new Date();
+
+      const renewalDate = new Date(joinDate);
+      renewalDate.setFullYear(joinDate.getFullYear() + 1);
 
       client = new Client({
         name: data.billTO,
         phone: data.phone,
         address: data.customerAddress,
-        joinDate: new Date(),
-        renewalDate: new Date()
+        joinDate,
+        renewalDate
       });
 
       await client.save();
     }
 
-    let finalInvoiceNumber = data.invoiceNumber?.trim();
+    // STEP 3 → Invoice number
+    let finalInvoiceNumber = data.invoiceNumber ? data.invoiceNumber.trim() : null;
 
-    if(finalInvoiceNumber){
+    if (finalInvoiceNumber) {
 
-      const exists = await Invoice.findOne({invoiceNumber:finalInvoiceNumber});
+      const exists = await Invoice.findOne({ invoiceNumber: finalInvoiceNumber });
 
-      if(exists){
+      if (exists) {
         return res.status(400).json({
-          success:false,
-          error:`Invoice Number ${finalInvoiceNumber} already exists`
-        })
+          success: false,
+          error: `Invoice Number ${finalInvoiceNumber} already exists`
+        });
       }
 
-    }else{
+    } else {
 
       finalInvoiceNumber = await getNextInvoiceNumber();
 
     }
 
-    data.items = (data.items || []).map(item=>({
+    // STEP 4 → Calculate items
+    data.items = (data.items || []).map(item => ({
       ...item,
-      total:Number(item.quantity) * Number(item.unitPrice)
-    }))
+      quantity: Number(item.quantity) || 0,
+      unitPrice: Number(item.unitPrice) || 0,
+      total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+    }));
 
+    // STEP 5 → Create invoice
     const invoice = new Invoice({
 
-      invoiceNumber:finalInvoiceNumber,
+      invoiceNumber: finalInvoiceNumber,
 
-      // 🔹 Client reference
       clientId: client._id,
 
-      billTO:data.billTO,
-      phone:data.phone,
-      customerAddress:data.customerAddress,
-      customerGSTIN:data.customerGSTIN || "",
+      billTO: data.billTO,
+      phone: data.phone,
+      customerAddress: data.customerAddress,
+      customerGSTIN: data.customerGSTIN || "",
 
-      items:data.items,
+      items: data.items,
 
-      sgst:Boolean(data.sgst),
-      cgst:Boolean(data.cgst),
+      sgst: Boolean(data.sgst),
+      cgst: Boolean(data.cgst),
 
-      SGSTAmount:Number(data.SGSTAmount)||0,
-      CGSTAmount:Number(data.CGSTAmount)||0,
+      SGSTAmount: Number(data.SGSTAmount) || 0,
+      CGSTAmount: Number(data.CGSTAmount) || 0,
 
-      taxableValue:Number(data.taxableValue)||0,
-      invoiceValue:Number(data.invoiceValue)||0,
+      taxableValue: Number(data.taxableValue) || 0,
+      invoiceValue: Number(data.invoiceValue) || 0,
 
-      paymentType:data.paymentType || "",
-      note:data.note || ""
+      paymentType: data.paymentType || "",
+      note: data.note || ""
 
-    })
+    });
 
-    await invoice.save()
+    await invoice.save();
 
     res.status(201).json({
-      success:true,
-      message:"Invoice saved successfully",
+      success: true,
+      message: "Invoice saved successfully",
       invoice
-    })
+    });
 
-  }catch(err){
-    res.status(500).json({success:false,error:err.message})
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+
   }
-}
+
+};
 
 exports.fetchInvoiceByNumber = async (req, res) => {
     try {

@@ -28,12 +28,18 @@ exports.createClient = async (req, res) => {
       });
     }
 
-    if (new Date(renewalDate) <= new Date(joinDate)) {
-      return res.status(400).json({
-        success: false,
-        message: "Renewal date must be greater than join date"
-      });
-    }
+  const join = new Date(joinDate);
+const renewal = new Date(renewalDate);
+
+const oneYearLater = new Date(join);
+oneYearLater.setFullYear(join.getFullYear() + 1);
+
+if (renewal.getTime() !== oneYearLater.getTime()) {
+  return res.status(400).json({
+    success: false,
+    message: "Renewal date must be exactly 1 year after join date"
+  });
+}
 
     const exists = await Client.findOne({ phone: normalizedPhone });
 
@@ -158,14 +164,30 @@ exports.getClientProfile = async (req, res) => {
 
 
 
-// ============================
-// UPDATE CLIENT DETAILS
-// ============================
 exports.updateClient = async (req, res) => {
 
   try {
 
     const { id } = req.params;
+    const { joinDate, renewalDate } = req.body;
+
+    // Validate renewal date if dates are provided
+    if (joinDate && renewalDate) {
+
+      const join = new Date(joinDate);
+      const renewal = new Date(renewalDate);
+
+      const oneYearLater = new Date(join);
+      oneYearLater.setFullYear(join.getFullYear() + 1);
+
+      if (renewal.getTime() !== oneYearLater.getTime()) {
+        return res.status(400).json({
+          success: false,
+          message: "Renewal date must be exactly 1 year after join date"
+        });
+      }
+
+    }
 
     const client = await Client.findByIdAndUpdate(
       id,
