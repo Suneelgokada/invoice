@@ -1,33 +1,28 @@
 import api from "../../api/axiosClient";
 
+
 export const getClients = async () => {
- const res = await api.get("/api/client/all");
+ const res = await api.get("/api/clients/create");
  return res.data;
 };
 
 export const createClient = async (data) => {
- const res = await api.post("/api/client/create", data);
+ const res = await api.post("/api/clients/list", data);
  return res.data;
 };
 
 export const deleteClient = async (id) => {
- const res = await api.delete(`/api/client/delete/${id}`);
+ const res = await api.delete(`/api/clients/delete/${id}`);
  return res.data;
 };
 
-export const downloadClientExcel = async () => {
+export const downloadClientExcel = (clients) => {
 
- const res = await api.get("/api/client/export",{
-  responseType:"blob"
- });
+  const worksheet = XLSX.utils.json_to_sheet(clients);
+  const workbook = XLSX.utils.book_new();
 
- const url = window.URL.createObjectURL(new Blob([res.data]));
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Clients");
 
- const link = document.createElement("a");
- link.href = url;
- link.setAttribute("download","clients.xlsx");
+  XLSX.writeFile(workbook, "clients.xlsx");
 
- document.body.appendChild(link);
- link.click();
- link.remove();
 };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createClient } from "..//services/clientService"
+import { createClient } from "../services/clientService";
 
 export default function ClientForm({ reload }) {
 
@@ -8,32 +8,48 @@ export default function ClientForm({ reload }) {
     phone: "",
     address: "",
     joinDate: "",
-    endDate: ""
+    renewalDate: ""
   });
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
-    const res = await createClient(form);
+    try {
 
-    if (res.success) {
+      // POST API call
+      const response = await createClient(form);
 
-      reload();
+      console.log("Create Client Response:", response);
 
-      setForm({
-        name: "",
-        phone: "",
-        address: "",
-        joinDate: "",
-        endDate: ""
-      });
+      if (response.success) {
+
+        alert("Client created successfully");
+
+        reload(); // refresh client list
+
+        setForm({
+          name: "",
+          phone: "",
+          address: "",
+          joinDate: "",
+          renewalDate: ""
+        });
+
+      } else {
+        alert(response.message);
+      }
+
+    } catch (error) {
+
+      console.error("Create client error:", error);
+
+      alert("Failed to create client");
 
     }
+
   };
 
   return (
-
     <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
 
       <h2 className="text-lg font-semibold mb-4">
@@ -46,6 +62,7 @@ export default function ClientForm({ reload }) {
       >
 
         <input
+          required
           placeholder="Client Name"
           value={form.name}
           onChange={(e) =>
@@ -55,6 +72,8 @@ export default function ClientForm({ reload }) {
         />
 
         <input
+          required
+          type="tel"
           placeholder="Phone"
           value={form.phone}
           onChange={(e) =>
@@ -64,6 +83,7 @@ export default function ClientForm({ reload }) {
         />
 
         <input
+          required
           placeholder="Address"
           value={form.address}
           onChange={(e) =>
@@ -73,6 +93,7 @@ export default function ClientForm({ reload }) {
         />
 
         <input
+          required
           type="date"
           value={form.joinDate}
           onChange={(e) =>
@@ -82,15 +103,17 @@ export default function ClientForm({ reload }) {
         />
 
         <input
+          required
           type="date"
-          value={form.endDate}
+          value={form.renewalDate}
           onChange={(e) =>
-            setForm({ ...form, endDate: e.target.value })
+            setForm({ ...form, renewalDate: e.target.value })
           }
           className="border p-2 rounded"
         />
 
         <button
+          type="submit"
           className="bg-indigo-600 text-white px-4 py-2 rounded col-span-5 md:col-span-1"
         >
           Add Client
