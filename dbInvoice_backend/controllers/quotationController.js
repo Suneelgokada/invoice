@@ -784,6 +784,13 @@ exports.generateQuotationDocument = async (req, res) => {
 
   try {
 
+    if (!req.body || !req.body.content) {
+      return res.status(400).json({
+        success: false,
+        message: "Content is required"
+      });
+    }
+
     const { content } = req.body;
 
     const pdfBuffer = await generateQuotationPDF(content);
