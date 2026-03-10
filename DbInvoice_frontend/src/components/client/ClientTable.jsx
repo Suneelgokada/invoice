@@ -71,7 +71,7 @@
 // }
 
 import React from "react";
-import { deleteClient, downloadClientExcel } from "../services/clientService";
+import {  downloadClientExcel } from "../services/clientService";
 import { Trash2, Edit, User } from "lucide-react";
 
 export default function ClientTable({ clients, reload, onEdit, onView }) {
@@ -161,13 +161,14 @@ export default function ClientTable({ clients, reload, onEdit, onView }) {
 
                   <td className="p-3 hidden sm:table-cell">{c.address}</td>
 
-                  <td className="p-3 hidden md:table-cell">
-                    {new Date(c.joinDate).toLocaleDateString()}
+                  <td>
+                    {new Date(c.joinDate).toLocaleDateString("en-GB")}
                   </td>
 
-                  <td className="p-3 hidden md:table-cell">
-                    {new Date(c.renewalDate).toLocaleDateString()}
+                  <td>
+                    {new Date(c.renewalDate).toLocaleDateString("en-GB")}
                   </td>
+
 
                   <td className="p-3">
 
@@ -191,14 +192,6 @@ export default function ClientTable({ clients, reload, onEdit, onView }) {
                         Edit
                       </button>
 
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDelete(c._id)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1"
-                      >
-                        <Trash2 size={14} />
-                        Delete
-                      </button>
 
                     </div>
 

@@ -29,14 +29,14 @@ export const updateClient = async (id, data) => {
 
 };
 
-// DELETE CLIENT
-export const deleteClient = async (id) => {
+// // DELETE CLIENT
+// export const deleteClient = async (id) => {
 
-  const res = await api.delete(`/api/admin/delete/${id}`);
+//   const res = await api.delete(`/api/admin/delete/${id}`);
 
-  return res.data;
+//   return res.data;
 
-};
+// };
 
 
 export const downloadClientExcel = (clients) => {

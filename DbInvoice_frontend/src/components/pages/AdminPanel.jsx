@@ -21,7 +21,10 @@ import ReactToPrint from "react-to-print";
 import AnalyticsDashboard from "../charts/AnalyticsDashboard";
 import PurchaseManager from '../purchase/PurchaseManager';
 import { Users } from "lucide-react";
+import QuotationEditor from '../QuotationEditor';
 import ClientManager from '../client/ClientManager';
+import { FileEdit } from "lucide-react";
+import QuotationBuilder from './QuotationBuilder';
 // --- CONFIGURATION ---
 const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
@@ -781,6 +784,7 @@ function AdminPanel({ onLogout }) {
                 setBillDetails(prev => ({
                     ...prev,
                     billTO: inv.billTO,
+                    phone: inv.phone,
                     customerAddress: inv.customerAddress,
                     customerGSTIN: inv.customerGSTIN,
                     items: normalizedItems,
@@ -901,13 +905,6 @@ function AdminPanel({ onLogout }) {
             setFormLoading(false);
         }
     };
-
-
-    // ----------------------------------------------------
-    // --- END Billing Form Logic ---
-    // ----------------------------------------------------
-
-    // --- Admin List Handlers (Keep Original) ---
 
     const performDeleteAdmin = async (type, number, token) => {
         setDashboardLoading(true);
@@ -1088,17 +1085,8 @@ function AdminPanel({ onLogout }) {
         }
     };
 
-
-    // ----------------------------------------------------
-    // --- Derived State & Render Helpers (Keep Original, except NewBillForm) ---
-    // ----------------------------------------------------
-
-    // --- Derived State & Render Helpers ---
-
-    // ✅ Only sum actual Invoices
     const totalInvoiceValue = invoices.reduce((sum, item) => sum + (Number(item.invoiceValue) || 0), 0);
 
-    // ✅ Only sum actual Quotations (Note: quotationValue field use chestunnam)
     const totalQuotationValue = quotations.reduce((sum, item) => sum + (Number(item.quotationValue) || 0), 0);
 
     const totalQuotationCount = quotations.length;
@@ -1135,7 +1123,7 @@ function AdminPanel({ onLogout }) {
                         <p className="text-xs text-green-400 mt-2 font-semibold uppercase">{quotations.length} Pending Quotations</p>
                     </div>
 
-                    {/* 📂 CARD 3: Operational Activity (Count) */}
+        
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
                         <p className="text-gray-500 font-medium text-sm">Total Transactions</p>
                         <p className="text-3xl font-bold text-purple-800 mt-1">{invoices.length + quotations.length}</p>
@@ -1549,19 +1537,21 @@ function AdminPanel({ onLogout }) {
                                 />
                             </div>
 
-                            <div className="flex items-start justify-center flex-col gap-2 w-full">
-                                <h1 className="font-medium">Phone</h1>
-                                <input
-                                    type="tel"
-                                    placeholder="Enter Mobile Number"
-                                    maxLength={10}
-                                    className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
-                                    value={billDetails.phone || ""}
-                                    onChange={(e) =>
-                                        setBillDetails({ ...billDetails, phone: e.target.value })
-                                    }
-                                />
-                            </div>
+                            {invoice && (
+                                <div className="flex items-start justify-center flex-col gap-2 w-full">
+                                    <h1 className="font-medium">Phone</h1>
+                                    <input
+                                        type="tel"
+                                        placeholder="Enter Mobile Number"
+                                        maxLength={10}
+                                        className="outline-none rounded-lg px-3 py-2 border border-blue-500 shadow-md w-full"
+                                        value={billDetails.phone || ""}
+                                        onChange={(e) =>
+                                            setBillDetails({ ...billDetails, phone: e.target.value })
+                                        }
+                                    />
+                                </div>
+                            )}
 
                             <div className="flex items-start justify-center flex-col gap-2 w-full">
                                 <h1 className="font-medium">Address</h1>
@@ -1913,6 +1903,8 @@ function AdminPanel({ onLogout }) {
                     <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
                 </div>
                 <SidebarItem icon={Users} label="Clients" tab="clients" />
+                   <SidebarItem icon={FileEdit} label="Quotation Builder" tab="quotationEditor" />
+
             </nav>
 
             {/* LOGOUT BUTTON */}
@@ -1941,6 +1933,24 @@ function AdminPanel({ onLogout }) {
                 return renderNewBillForm();
             case 'changePassword':
                 return renderChangePassword();
+
+            case 'quotationEditor':
+            return (
+                <QuotationBuilder
+                    BASE_URL={BASE_URL}
+                    showNotification={showNotification}
+                    token={token}
+                />
+            );
+
+            case 'quotationEditor':
+    return (
+        <QuotationBuilder
+            BASE_URL={BASE_URL}
+            showNotification={showNotification}
+            token={token}
+        />
+    );
             case 'purchases':
                 return (
                     <PurchaseManager
