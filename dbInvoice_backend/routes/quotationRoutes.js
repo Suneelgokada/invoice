@@ -12,7 +12,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { saveQuotation, generateQuotationNumber,fetchQuotationByNumber,updateQuotation, deleteQuotation } = require("../controllers/quotationController");
+const { saveQuotation, generateQuotationNumber,fetchQuotationByNumber,updateQuotation, deleteQuotation , generateQuotationDocument} = require("../controllers/quotationController");
 
 router.get("/generate", async (req, res) => {
   try {
@@ -27,6 +27,8 @@ router.post("/save", saveQuotation);
 router.get('/fetch/:number', fetchQuotationByNumber);
 router.put("/update",updateQuotation)
 router.delete("/delete/:number", deleteQuotation);
+
+
 module.exports = router;
 
 

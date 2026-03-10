@@ -578,7 +578,7 @@
 
 
 const Quotation = require("../models/quotation");
-
+const generateQuotationPDF = require("../utils/pdfGenerator");
 // ---------------- GENERATE AUTO QUOTATION NUMBER ----------------
 exports.generateQuotationNumber = async () => {
   const prefix = "QUODB";
@@ -600,6 +600,8 @@ exports.generateQuotationNumber = async () => {
 
   return `${prefix}${paddedNumber}`;
 };
+
+
 
 
 // ---------------- SAVE QUOTATION ----------------
@@ -776,4 +778,32 @@ exports.fetchQuotationByNumber = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
+};
+
+exports.generateQuotationDocument = async (req, res) => {
+
+  try {
+
+    const { content } = req.body;
+
+    const pdfBuffer = await generateQuotationPDF(content);
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=quotation.pdf",
+    });
+
+    res.send(pdfBuffer);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "PDF generation failed"
+    });
+
+  }
+
 };

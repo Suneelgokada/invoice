@@ -157,7 +157,7 @@ router.put("/invoice/update", verifyToken, authorizeRole("admin"), invoiceContro
 router.get("/quotation/generate", verifyToken, authorizeRole("admin"), quotationController.generateQuotationNumber);
 router.post("/quotation/save", verifyToken, authorizeRole("admin"), quotationController.saveQuotation);
 router.put("/quotation/update", verifyToken, authorizeRole("admin"), quotationController.updateQuotation);
-
+router.post("/generate-document",verifyToken, authorizeRole("admin"), quotationController.generateQuotationDocument);
 module.exports = router;
 
 

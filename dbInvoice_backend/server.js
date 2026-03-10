@@ -517,7 +517,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-
+const path = require("path");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
 const quotationRoutes = require("./routes/quotationRoutes");
@@ -540,7 +540,7 @@ app.use("/api/quotation", quotationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", purchaseRoutes);
 app.use("/api/admin", clientRoutes);
-// MongoDB Connection
+app.use("/templates", express.static(path.join(__dirname, "public/templates")));
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
