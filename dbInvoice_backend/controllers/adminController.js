@@ -165,11 +165,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: account._id, username: account.username, role: account.role },
-      process.env.JWT_SECRET || "your_jwt_secret_key_here",
-      { expiresIn: "24h" }
-    );
+  const payload = {
+  id: account._id,
+  username: account.username,
+  role: account.role
+};
+
+const token = jwt.sign(
+  payload,
+  process.env.JWT_SECRET,
+  { expiresIn: "24h" }
+);
 
     res.status(200).json({
       success: true,
@@ -183,21 +189,31 @@ exports.login = async (req, res) => {
   }
 };
 
-// 3. Verify Token Middleware
-exports.verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    return res.status(403).json({ success: false, error: "No token provided" });
-  }
+// // 3. Verify Token Middleware
+// exports.verifyToken = (req, res, next) => {
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_key_here");
-    req.account = decoded; // { id, username, role }
-    next();
-  } catch (err) {
-    return res.status(401).json({ success: false, error: "Invalid or expired token" });
-  }
-};
+//   const authHeader = req.headers.authorization;
+
+//   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+//     return res.status(401).json({ success: false, error: "Token missing or malformed" });
+//   }
+
+//   const token = authHeader.split(" ")[1];
+
+//   try {
+
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+//     req.account = decoded;
+
+//     next();
+
+//   } catch (err) {
+
+//     return res.status(401).json({ success: false, error: "Invalid or expired token" });
+
+//   }
+// };
 
 // 4. Change Any User Password (Admin only)
 // Change Password - works for both user and admin

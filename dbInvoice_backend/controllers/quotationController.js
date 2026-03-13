@@ -579,6 +579,7 @@
 
 const Quotation = require("../models/quotation");
 const generateQuotationPDF = require("../utils/pdfGenerator");
+
 // ---------------- GENERATE AUTO QUOTATION NUMBER ----------------
 exports.generateQuotationNumber = async () => {
   const prefix = "QUODB";
@@ -780,37 +781,51 @@ exports.fetchQuotationByNumber = async (req, res) => {
   }
 };
 
+const fs = require("fs");
+const path = require("path");
+const puppeteer = require("puppeteer");
+
 exports.generateQuotationDocument = async (req, res) => {
-
   try {
-
-    if (!req.body || !req.body.content) {
-      return res.status(400).json({
-        success: false,
-        message: "Content is required"
-      });
-    }
-
     const { content } = req.body;
 
-    const pdfBuffer = await generateQuotationPDF(content);
+    const templatePath = path.join(__dirname, "../template/quotationTemplate.html");
+    let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+    // Letterhead to Base64 (Reliable rendering kosam)
+    const letterheadPath = path.join(__dirname, "../public/templates/letterhead.png");
+    const imageBuffer = fs.readFileSync(letterheadPath);
+    const base64Image = `data:image/png;base64,${imageBuffer.toString("base64")}`;
+
+    // Replace Local URLs with Base64
+    const finalPageContent = content.replaceAll("http://localhost:5000/templates/letterhead.png", base64Image);
+    const finalHtml = htmlTemplate.replace("{{PAGES}}", finalPageContent);
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
+
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
+      preferCSSPageSize: true // CSS Page breaks ni priority isthundi
+    });
+
+    await browser.close();
 
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=quotation.pdf",
+      "Content-Disposition": "attachment; filename=quotation.pdf"
     });
 
-    res.send(pdfBuffer);
-
+    res.send(pdf);
   } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "PDF generation failed"
-    });
-
+    console.error("PDF ERROR:", error);
+    res.status(500).send("PDF generation failed");
   }
-
 };

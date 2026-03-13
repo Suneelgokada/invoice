@@ -123,7 +123,7 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const invoiceController = require("../controllers/invoiceController");
 const quotationController = require("../controllers/quotationController");
-const { verifyToken } = require("../controllers/adminController");
+const verifyToken  = require("../middleware/authMiddleware");
 const authorizeRole = require("../middleware/authorizeRole");
 
 // ==========================
@@ -144,7 +144,7 @@ router.post("/login", adminController.login);
 router.get("/invoices", verifyToken, authorizeRole("admin"), invoiceController.fetchAllInvoices);
 router.get("/quotations", verifyToken, authorizeRole("admin"), quotationController.fetchAllQuotations);
 router.put("/change-user-password", verifyToken, authorizeRole("admin"), adminController.changePassword);
-router.get("/analytics", adminController.verifyToken, adminController.analytics);
+router.get("/analytics", verifyToken, adminController.analytics);
 router.delete("/invoice/:number", verifyToken, authorizeRole("admin"), invoiceController.deleteInvoice);
 router.delete("/quotation/:number", verifyToken, authorizeRole("admin"), quotationController.deleteQuotation);
 router.get("/invoice/fetch/:number", verifyToken, authorizeRole("admin"), invoiceController.fetchInvoiceByNumber);
