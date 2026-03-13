@@ -25,13 +25,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
 
-    if (error.response?.status === 401) {
-
+    // Blob request lo logout cheyakudadhu
+    if (
+      error.response?.status === 401 &&
+      error.config.responseType !== "blob"
+    ) {
       localStorage.removeItem("authToken");
-      localStorage.removeItem("userRole");
-
-      window.location.href = "/"; 
-      // redirect to login automatically
+      window.location.href = "/";
     }
 
     return Promise.reject(error);

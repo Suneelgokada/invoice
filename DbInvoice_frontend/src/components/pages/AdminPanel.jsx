@@ -26,7 +26,7 @@ import ClientManager from '../client/ClientManager';
 import { FileEdit } from "lucide-react";
 import QuotationBuilder from './QuotationBuilder';
 // --- CONFIGURATION ---
-const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
+const BASE_URL = `http://localhost:5000`;
 
 // --- Utility: Number to Words Converter (Keep the original utility) ---
 const numberToWords = (num) => {
@@ -123,7 +123,10 @@ const Modal = ({ state, onClose, onConfirm }) => {
     );
 };
 
-
+const handleUnauthorized = () => {
+    localStorage.removeItem("authToken");
+    onLogout();
+};
 // --- Component: AdminPanel ---
 function AdminPanel({ onLogout }) {
     // --- Admin Dashboard State (Keep Original) ---
@@ -247,7 +250,7 @@ function AdminPanel({ onLogout }) {
                 setDashboardError(prev => prev + ' Failed to load quotations data. ');
             }
         } catch (err) {
-            setDashboardError('Failed to fetch dashboard data. Check network connection or Token.');
+            setDashboardError('Failed to fetch data. Please login again if issue persists.');
             console.error('Admin Data Fetch Error:', err);
         } finally {
             setDashboardLoading(false);
@@ -272,6 +275,10 @@ function AdminPanel({ onLogout }) {
             const response = await fetch(`${BASE_URL}/api/admin/analytics`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
             const data = await response.json();
 
             if (response.ok && data.success) {
@@ -620,6 +627,10 @@ function AdminPanel({ onLogout }) {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` }
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
 
             const data = await response.json();
 
@@ -703,6 +714,10 @@ function AdminPanel({ onLogout }) {
             const response = await fetch(quoteURL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
             const result = await response.json();
 
             if (response.ok && result.quotation) {
@@ -768,6 +783,10 @@ function AdminPanel({ onLogout }) {
             const response = await fetch(invoiceURL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
             const result = await response.json();
 
             if (response.ok && result.invoice) {
@@ -864,6 +883,10 @@ function AdminPanel({ onLogout }) {
             const response = await fetch(quoteURL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
             const result = await response.json();
 
             if (response.ok && result.quotation) {
@@ -920,6 +943,10 @@ function AdminPanel({ onLogout }) {
                     "Content-Type": "application/json",
                 },
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
 
             const data = await response.json();
 
@@ -986,6 +1013,10 @@ function AdminPanel({ onLogout }) {
                     })
                 }
             );
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
 
             const data = await response.json();
             if (data.success) {
@@ -1064,6 +1095,10 @@ function AdminPanel({ onLogout }) {
                 },
                 body: JSON.stringify(body)
             });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
 
             const data = await response.json();
 
@@ -1123,7 +1158,7 @@ function AdminPanel({ onLogout }) {
                         <p className="text-xs text-green-400 mt-2 font-semibold uppercase">{quotations.length} Pending Quotations</p>
                     </div>
 
-        
+
                     <div className="bg-white p-6 rounded-lg shadow-xl border-l-4 border-purple-500">
                         <p className="text-gray-500 font-medium text-sm">Total Transactions</p>
                         <p className="text-3xl font-bold text-purple-800 mt-1">{invoices.length + quotations.length}</p>
@@ -1903,7 +1938,7 @@ function AdminPanel({ onLogout }) {
                     <SidebarItem icon={ClipboardList} label="Purchases" tab="purchases" />
                 </div>
                 <SidebarItem icon={Users} label="Clients" tab="clients" />
-                   <SidebarItem icon={FileEdit} label="Quotation Builder" tab="quotationEditor" />
+                <SidebarItem icon={FileEdit} label="Quotation Builder" tab="quotationEditor" />
 
             </nav>
 
@@ -1935,22 +1970,22 @@ function AdminPanel({ onLogout }) {
                 return renderChangePassword();
 
             case 'quotationEditor':
-            return (
-                <QuotationBuilder
-                    BASE_URL={BASE_URL}
-                    showNotification={showNotification}
-                    token={token}
-                />
-            );
+                return (
+                    <QuotationBuilder
+                        BASE_URL={BASE_URL}
+                        showNotification={showNotification}
+                        token={token}
+                    />
+                );
 
-            case 'quotationEditor':
-    return (
-        <QuotationBuilder
-            BASE_URL={BASE_URL}
-            showNotification={showNotification}
-            token={token}
-        />
-    );
+            //         case 'quotationBuilder':
+            // return (
+            //     <QuotationBuilder
+            //         BASE_URL={BASE_URL}
+            //         showNotification={showNotification}
+            //         token={token}
+            //     />
+            // );
             case 'purchases':
                 return (
                     <PurchaseManager
