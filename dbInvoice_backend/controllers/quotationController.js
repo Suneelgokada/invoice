@@ -784,25 +784,30 @@ exports.fetchQuotationByNumber = async (req, res) => {
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
+const axios = require("axios"); // Cloudinary image ni download cheyadaniki idi compulsory
 
 exports.generateQuotationDocument = async (req, res) => {
   try {
     const { content } = req.body;
+    
+    // 1. Nee Cloudinary Letterhead URL ikkada ivvu
+    const CLOUDINARY_URL = "https://res.cloudinary.com/dp5ttq85f/image/upload/v1773418626/Designblocks-letterhead_dl9jgc.jpg";
 
     const templatePath = path.join(__dirname, "../template/quotationTemplate.html");
     let htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
-    // Letterhead to Base64 (Reliable rendering kosam)
-    const letterheadPath = path.join(__dirname, "../public/templates/letterhead.png");
-    const imageBuffer = fs.readFileSync(letterheadPath);
-    const base64Image = `data:image/png;base64,${imageBuffer.toString("base64")}`;
+    // 2. Cloudinary image ni fetch chesi Base64 loki marchali
+    // Render/Puppeteer ki external images direct ga dorakavu, so idi best way
+    const response = await axios.get(CLOUDINARY_URL, { responseType: 'arraybuffer' });
+    const base64Image = `data:image/png;base64,${Buffer.from(response.data).toString('base64')}`;
 
-    // Replace Local URLs with Base64
-    const finalPageContent = content.replaceAll("http://localhost:5000/templates/letterhead.png", base64Image);
+    // 3. Frontend nundi vacche content lo Cloudinary URL ni Base64 tho replace cheyali
+    const finalPageContent = content.replaceAll(CLOUDINARY_URL, base64Image);
     const finalHtml = htmlTemplate.replace("{{PAGES}}", finalPageContent);
 
+    // 4. Puppeteer Launch
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: "new", // Render lo 'new' headless mode vaadatam better
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
@@ -813,7 +818,7 @@ exports.generateQuotationDocument = async (req, res) => {
       format: "A4",
       printBackground: true,
       margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
-      preferCSSPageSize: true // CSS Page breaks ni priority isthundi
+      preferCSSPageSize: true 
     });
 
     await browser.close();
