@@ -26,7 +26,7 @@ import ClientManager from '../client/ClientManager';
 import { FileEdit } from "lucide-react";
 import QuotationBuilder from './QuotationBuilder';
 // --- CONFIGURATION ---
-const BASE_URL = `http://localhost:5000`;
+const BASE_URL = `https://invoice-dbinvoice-backend.onrender.com`;
 
 // --- Utility: Number to Words Converter (Keep the original utility) ---
 const numberToWords = (num) => {
