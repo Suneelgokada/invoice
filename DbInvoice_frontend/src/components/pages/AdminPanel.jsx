@@ -1690,8 +1690,8 @@ function AdminPanel({ onLogout }) {
                                 saveLoading ||
                                 billDetails.items.length === 0 ||
                                 !billDetails.billTO ||
-                                !billDetails.phone ||
-                                !billDetails.customerAddress
+                                !billDetails.customerAddress ||
+                                (invoice && !billDetails.phone)
                             }
                             className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition flex items-center justify-center min-w-[10rem]"
                         >
