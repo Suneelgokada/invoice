@@ -780,57 +780,86 @@ exports.fetchQuotationByNumber = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
-
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
-const axios = require("axios"); // Cloudinary image ni download cheyadaniki idi compulsory
+const axios = require("axios");
 
 exports.generateQuotationDocument = async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content } = req.body; // Frontend nundi vacche HTML (with Base64 images)
     
-    // 1. Nee Cloudinary Letterhead URL ikkada ivvu
-    const CLOUDINARY_URL = "https://res.cloudinary.com/dp5ttq85f/image/upload/v1773418626/Designblocks-letterhead_dl9jgc.jpg";
+    // 1. Static Letterhead URL
+    const CLOUDINARY_URL = "https://res.cloudinary.com/dp5ttq85f/image/upload/v1773465369/Design_Blocks_Lette_head_3__page-0001_tcbgu7.jpg";
 
     const templatePath = path.join(__dirname, "../template/quotationTemplate.html");
     let htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
-    // 2. Cloudinary image ni fetch chesi Base64 loki marchali
-    // Render/Puppeteer ki external images direct ga dorakavu, so idi best way
+    // 2. Fetch Letterhead and convert to Base64 (Reliability kosam)
     const response = await axios.get(CLOUDINARY_URL, { responseType: 'arraybuffer' });
-    const base64Image = `data:image/png;base64,${Buffer.from(response.data).toString('base64')}`;
+    const base64Letterhead = `data:image/jpeg;base64,${Buffer.from(response.data).toString('base64')}`;
 
-    // 3. Frontend nundi vacche content lo Cloudinary URL ni Base64 tho replace cheyali
-    const finalPageContent = content.replaceAll(CLOUDINARY_URL, base64Image);
+    // 3. Replace Cloudinary URL with Base64 in the content
+    const finalPageContent = content.replaceAll(CLOUDINARY_URL, base64Letterhead);
     const finalHtml = htmlTemplate.replace("{{PAGES}}", finalPageContent);
 
-    // 4. Puppeteer Launch
+    // 4. Puppeteer Launch with optimized args
     const browser = await puppeteer.launch({
-      headless: "new", // Render lo 'new' headless mode vaadatam better
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      headless: "new",
+      args: [
+        "--no-sandbox", 
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage", // Render memory issues thagginchadaniki
+        "--font-render-hinting=none" // Text sharp ga raavadaniki
+      ]
     });
 
     const page = await browser.newPage();
-    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
 
+    // 5. Important: Content Set and Image Rendering Wait
+    // User upload chesina images render avvadaniki koncham time padthundi
+    await page.setContent(finalHtml, { 
+      waitUntil: ["networkidle0", "domcontentloaded", "load"],
+      timeout: 60000 // 60 seconds (Large images unte safe)
+    });
+
+    // 6. Image Loading Verification Script (Industry Pro Tip)
+    // Ee script prathi image full ga load ayye daka Puppeteer ni wait cheyisthundi
+    await page.evaluate(async () => {
+      const selectors = Array.from(document.querySelectorAll('img'));
+      await Promise.all(selectors.map(img => {
+        if (img.complete) return;
+        return new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      }));
+    });
+
+    // 7. PDF Generation
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
-      preferCSSPageSize: true 
+      preferCSSPageSize: true,
+      displayHeaderFooter: false
     });
 
     await browser.close();
 
+    // 8. Send Response
     res.set({
       "Content-Type": "application/pdf",
       "Content-Disposition": "attachment; filename=quotation.pdf"
     });
 
     res.send(pdf);
+
   } catch (error) {
-    console.error("PDF ERROR:", error);
-    res.status(500).send("PDF generation failed");
+    console.error("PDF GENERATION ERROR:", error);
+    res.status(500).json({ 
+      message: "PDF generation failed", 
+      details: error.message 
+    });
   }
 };

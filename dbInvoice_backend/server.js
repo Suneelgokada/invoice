@@ -12,7 +12,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const clientRoutes = require("./routes/clientRoutes");
 const app = express();
 const helmet = require("helmet");
-
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true })); 
 app.use(
   helmet({
     contentSecurityPolicy: false
